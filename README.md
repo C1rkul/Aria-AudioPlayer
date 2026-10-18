@@ -53,7 +53,7 @@
 
 ## Скриншоты
 
-Скоро. *(Положите изображения в `docs/` и подключите их в начале этого файла.)*
+Скоро. 
 
 ## Установка
 
@@ -157,7 +157,7 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Screenshots
 
-Coming soon. *(Put images into `docs/` and link them at the top of this file.)*
+Coming soon. 
 
 ## Installation
 
