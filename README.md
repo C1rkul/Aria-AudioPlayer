@@ -113,6 +113,9 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 - Поиск текстов песен через внешний API — поле для ссылки и парсер уже подготовлены.
 - Внешние источники музыки (вкладка «Внешние»).
 
+🇷🇺 Русский
+⚠️ Примечание: у приложения пока нет собственной иконки: оно находится в стадии беты. Иконка появится в одной из следующих версий.
+
 ## Авторы
 
 **made by C1RKUL & Claude x Qwen**
@@ -216,6 +219,9 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 - Crossfade (fade-out / fade-in) between tracks — a placeholder card is already in Settings.
 - Lyrics via an external API — the URL field and the response parser are prepared.
 - External music sources (the "External" tab).
+
+🇬🇧 English
+⚠️ Note: the app doesn't have its own icon yet, since it is still in beta. The icon will be added in one of the upcoming versions.
 
 ## Credits
 
