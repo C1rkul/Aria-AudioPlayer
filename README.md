@@ -6,7 +6,7 @@
 
 Локальный аудио-плеер на Go + Wails + Svelte · A local audio player built with Go + Wails + Svelte
 
-`v0.3.0-beta`
+`v0.3.2-beta`
 
 </div>
 
@@ -33,19 +33,26 @@
 - Кнопка «назад» перематывает в начало, если трек играет дольше 3 секунд.
 - Если плеер на паузе и вы переключаете трек, новый трек тоже остаётся на паузе.
 - Опция «восстанавливать последний трек при запуске» (трек ждёт на паузе).
+- Кроссфейд с настраиваемой длительностью (1–12 с): плавно только при автоматическом переходе к следующему треку, ручные переключения всегда мгновенные.
 - Звук отдаётся через локальный HTTP-сервер с поддержкой Range-запросов, поэтому перемотка быстрая даже на больших файлах.
 
 **Большая страница (Now Playing)**
 - Плавно выезжает снизу, показывает крупную обложку и данные трека.
 - Визуализатор спектра (Web Audio), перемотка, громкость, повтор и перемешивание.
-- Панель «Текст» — заготовка под поиск текстов через внешний API.
+- Вкладки сбоку: «Текст» (заготовка под поиск через внешний API), «Очередь», «Плейлист» и «Настройки» — скорость, тон и визуализатор.
+- Закрывается только по ESC или кнопке ✕; уход страницы быстрый и плавный.
 - Адаптивный фон: цвет подстраивается под обложку (без обложки фон тёмный), при закрытии цвет «замораживается».
 
 **Оформление**
 - Темы: тёмная и светлая. Дизайны: обычный, Glassmorphism, Glassmorphism+.
 - Анимированные фоны: Particle, Babble, Matrix, Aurora — у каждого свои настройки (количество точек / пузырей / туманностей, скорость и плотность символов).
 - Палитра: базовая или свой акцентный цвет. Неоновая обводка окна (включается переключателем).
+- Анимированный логотип-эквалайзер в боковом меню и собственные SVG-иконки интерфейса.
 - Плавные переходы: смена темы, страниц, обложек. Анимированная заставка при запуске.
+
+**Окно**
+- Без рамки: кнопки «— ×» слева сверху, окно тянется за верхнюю полосу, кнопки «развёрнуть» нет.
+- Своя иконка приложения вместо стандартной.
 
 ## Скриншоты
 
@@ -101,14 +108,14 @@ wails build    # готовая сборка: build/bin/audioplayer.exe
 
 ```
 app.go            бэкенд: настройки, треки, теги и обложки, локальный стрим-сервер
-main.go           запуск Wails, окно (1100×720, без изменения размера)
+main.go           запуск Wails, окно без рамки (1100×720, без изменения размера)
 frontend/src/
   App.svelte      каркас, нижняя панель, заставка, переходы
-  components/     страницы и UI-компоненты (плеер, настройки, Now Playing, фон, иконки)
+  components/     страницы и UI-компоненты (плеер, настройки, Now Playing, фон, логотип, иконки)
   lib/            контроллер воспроизведения, источники, заготовка для текстов, автоскрытие скролла
-  stores/         состояние: треки, настройки
+  stores/         состояние: треки, настройки, плейлисты
   design.css      темы и дизайны (переменные CSS)
-build/            иконки и ресурсы сборки
+build/            иконка приложения и ресурсы сборки
 ```
 
 ## Стек
@@ -121,7 +128,6 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Планы
 
-- Кроссфейд (fadeout / fadein) между треками — заготовка в настройках.
 - Поиск текстов песен через внешний API — поле для ссылки и парсер уже подготовлены.
 - Внешние источники музыки (вкладка «Внешние»).
 
@@ -153,19 +159,26 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 - The "previous" button restarts the track if it has been playing for more than 3 seconds.
 - If the player is paused and you switch tracks, the new track stays paused too.
 - Optional "restore last track on startup" (the track waits, paused).
+- Crossfade with adjustable duration (1–12 s): it only blends tracks on automatic advance — manual switches are always instant.
 - Audio is served by a local HTTP server with Range-request support, so seeking is fast even in large files.
 
 **Now Playing page**
 - Smoothly slides up from the bottom and shows large cover art and track info.
 - Spectrum visualizer (Web Audio), seek bar, volume, repeat and shuffle.
-- A "Lyrics" panel — a stub for fetching lyrics through an external API.
+- Side tabs: "Lyrics" (an API stub), "Queue", "Playlist" and "Settings" — tempo, pitch and visualizer.
+- Closes only with ESC or the ✕ button; the page slides away quickly and smoothly.
 - Adaptive background: the color follows the cover art (dark when there is no cover) and freezes while the page slides away.
 
 **Appearance**
 - Themes: dark and light. Designs: normal, Glassmorphism, Glassmorphism+.
 - Animated backgrounds: Particle, Babble, Matrix, Aurora — each with its own settings (number of dots / bubbles / nebulae, symbol speed and density).
 - Palette: base or a custom accent color. Neon window outline (toggle).
+- Animated equalizer logo in the sidebar and custom SVG interface icons.
 - Smooth transitions for theme, pages and cover art. Animated splash screen on startup.
+
+**Window**
+- Frameless: "— ×" controls in the top-left corner, drag the window by the top strip, no maximize button.
+- A custom app icon instead of the default one.
 
 ## Screenshots
 
@@ -221,14 +234,14 @@ The app never copies or modifies your music files — only their paths are store
 
 ```
 app.go            backend: settings, tracks, tags and covers, local stream server
-main.go           Wails entry point, window (1100×720, not resizable)
+main.go           Wails entry point, frameless window (1100×720, not resizable)
 frontend/src/
   App.svelte      shell, bottom bar, splash screen, transitions
-  components/     pages and UI components (player, settings, Now Playing, background, icons)
+  components/     pages and UI components (player, settings, Now Playing, background, logo, icons)
   lib/            playback controller, sources, lyrics stub, scrollbar auto-hide
-  stores/         state: tracks, settings
+  stores/         state: tracks, settings, playlists
   design.css      themes and designs (CSS variables)
-build/            icons and build resources
+build/            app icon and build resources
 ```
 
 ## Tech stack
@@ -241,7 +254,6 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — which file does what.
 
 ## Roadmap
 
-- Crossfade (fade-out / fade-in) between tracks — a placeholder card is already in Settings.
 - Lyrics via an external API — the URL field and the response parser are prepared.
 - External music sources (the "External" tab).
 
