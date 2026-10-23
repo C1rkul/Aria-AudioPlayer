@@ -58,7 +58,7 @@
 
 **ГЛАВНАЯ**
 <p align="center">
-  <img src="./frontend/docs/main.png" alt="ГЛАВНАЯ" width="380">
+  <img src="./frontend/docs/main1.png" alt="ГЛАВНАЯ" width="380">
 </p>
 
 ##
