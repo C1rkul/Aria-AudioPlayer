@@ -49,10 +49,19 @@
 
 ## Скриншоты
 
-<!-- Добавьте скриншоты в папку docs/ и раскомментируйте / Put screenshots into docs/ and uncomment:
-![Main window](frontend/docs/main.png)
-![Now Playing](frontend/docs/now-playing.png)
--->
+**ГЛАВНАЯ**
+<p align="center">
+  <img src="./frontend/docs/main.png" alt="ГЛАВНАЯ" width="380">
+</p>
+
+##
+
+**СЕЙЧАС ИГРАЕТ**
+<p align="center">
+  <img src="./frontend/docs/now-playing.png" alt="СЕЙЧАС ИГРАЕТ" width="380">
+</p>
+
+##
 
 ## Установка
 
@@ -160,10 +169,15 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Screenshots
 
-<!-- Добавьте скриншоты в папку docs/ и раскомментируйте / Put screenshots into docs/ and uncomment:
-![Main window](docs/main.png)
-![Now Playing](docs/now-playing.png)
--->
+**MAIN PAGE**
+<p align="center">
+  <img src="./frontend/docs/main.png" alt="MAIN PAGE" width="380">
+</p>
+
+**NOW PLAYING PAGE**
+<p align="center">
+  <img src="./frontend/docs/now-playing.png" alt="NOW PLAYING" width="380">
+</p>
 
 ## Installation
 
