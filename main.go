@@ -52,6 +52,7 @@ func main() {
 		Width:         1100,
 		Height:        720,
 		DisableResize: true,
+		Frameless:     true,
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,
 			DisableWebViewDrop: true,

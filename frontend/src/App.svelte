@@ -1,10 +1,12 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   
   // Компоненты страниц
   import PlayerPage from './components/PlayerPage.svelte';
   import SettingsPage from './components/SettingsPage.svelte';
   import AboutPage from './components/AboutPage.svelte';
+  import StatsPage from './components/StatsPage.svelte';
+  import { registerLaunch } from './stores/stats.js';
   import PlaylistsPage from './components/PlaylistsPage.svelte';
   import UpdatesModal from './components/UpdatesModal.svelte';
   import BackgroundFX from './components/BackgroundFX.svelte';
@@ -25,6 +27,8 @@
   import CoverImage from './components/CoverImage.svelte';
   import RepeatIcon from './components/RepeatIcon.svelte';
   import ShuffleIcon from './components/ShuffleIcon.svelte';
+  import WindowControls from './components/WindowControls.svelte';
+  import SkipIcon from './components/SkipIcon.svelte';
 
   // Stores
   import { tracks, currentIndex, currentTrack, isPlaying, repeatMode, shuffleEnabled } from './stores/player.js';
@@ -79,7 +83,24 @@
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
+  // Плавно скользящее выделение активной вкладки бокового меню
+  let navEl;
+  let ind = { top: 0, h: 0, ready: false };
+  function updateInd() {
+    const b = navEl && navEl.querySelector('button.active');
+    if (b) ind = { top: b.offsetTop, h: b.offsetHeight, ready: ind.ready };
+  }
+  $: page, tick().then(updateInd);
+  onMount(() => {
+    updateInd();
+    // включаем анимацию только после первой установки позиции, чтобы выделение не «ехало» при старте
+    const raf = requestAnimationFrame(() => (ind = { ...ind, ready: true }));
+    window.addEventListener('resize', updateInd);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', updateInd); };
+  });
+
   onMount(async () => {
+    registerLaunch();
     try {
       // 1. Init Settings
       const loadedSettings = await LoadSettings();
@@ -260,14 +281,17 @@
 {/if}
 
 <div class="layout" inert={showSplash}>
+  <!-- Пустой верхний ряд (40px) — резерв под слой окна; сам слой живёт ниже, вне inert -->
   <aside class="sidebar">
     <div class="logo-block">
       <div class="logo"><AriaMark size={30} glow={false} /><span class="logo-rest">ria</span></div>
       <div class="app-version">v{APP_VERSION}</div>
     </div>
-    <nav class="nav">
+    <nav class="nav" bind:this={navEl}>
+      <span class="nav-ind" class:ready={ind.ready} style="transform:translateY({ind.top}px);height:{ind.h}px"></span>
       <button class:active={page === 'player'} on:click={() => (page = 'player')}>Плеер</button>
       <button class:active={page === 'playlists'} on:click={() => (page = 'playlists')}>Плейлисты</button>
+      <button class:active={page === 'stats'} on:click={() => (page = 'stats')}>Статистика</button>
       <button class:active={page === 'settings'} on:click={() => (page = 'settings')}>Настройки</button>
       <button class:active={page === 'about'} on:click={() => (page = 'about')}>О приложении</button>
     </nav>
@@ -285,6 +309,8 @@
       <PlayerPage streamBase={streamBase} />
     {:else if page === 'playlists'}
       <PlaylistsPage streamBase={streamBase} on:open={() => (page = 'player')} />
+    {:else if page === 'stats'}
+      <StatsPage streamBase={streamBase} />
     {:else if page === 'settings'}
       <SettingsPage />
     {:else if page === 'about'}
@@ -323,11 +349,11 @@
         <button class="mode-btn" class:active={$repeatMode !== 'off'} on:click={() => repeatMode.update(v => v==='off'?'all':v==='all'?'one':'off')} title={$repeatMode === 'one' ? 'Повтор: один трек' : $repeatMode === 'all' ? 'Повтор: весь список' : 'Повтор выключен'}>
           <RepeatIcon mode={$repeatMode} />
         </button>
-        <button class="nav-btn" on:click={() => playerController.prev()} title="Предыдущий">⏮</button>
+        <button class="nav-btn" on:click={() => playerController.prev()} title="Предыдущий"><SkipIcon back /></button>
         <button class="play-btn" on:click={() => playerController.togglePlay()} title={$isPlaying ? 'Пауза' : 'Играть'}>
           <PlayPauseIcon playing={$isPlaying} />
         </button>
-        <button class="nav-btn" on:click={() => playerController.next()} title="Следующий">⏭</button>
+        <button class="nav-btn" on:click={() => playerController.next()} title="Следующий"><SkipIcon /></button>
         <button class="mode-btn" class:active={$shuffleEnabled} on:click={() => shuffleEnabled.update(v=>!v)} title={$shuffleEnabled ? 'Перемешивание включено' : 'Перемешивание выключено'}>
           <ShuffleIcon />
         </button>
@@ -370,6 +396,11 @@
   <Splash on:done={() => (showSplash = false)} />
 {/if}
 
+<!-- Кнопки окна и зона перетаскивания: вне .layout, поэтому работают даже на сплэше (inert) -->
+<div class="win-layer">
+  <WindowControls />
+</div>
+
 <!-- Hidden Audio -->
 <audio bind:this={audioElement}></audio>
 
@@ -405,8 +436,14 @@
   .toast { position:fixed; left:50%; bottom:110px; transform:translateX(-50%); z-index:2500; padding:10px 18px; border-radius:999px;
     background: var(--panel-bg, #1b1b21); border:1px solid rgba(var(--accent-rgb),0.45); color:var(--text); font-size:14px;
     box-shadow: 0 8px 28px rgba(0,0,0,0.35); -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur)); pointer-events:none; }
-  .layout { position:relative; z-index:1; width:100vw; height:100vh; display:grid; grid-template-columns:230px 1fr; grid-template-rows:1fr 90px; }
-  .sidebar { grid-column:1; grid-row:1/span 2; padding:20px 14px; background:var(--panel-bg); border-right:1px solid var(--border); backdrop-filter:blur(var(--blur)); display:flex; flex-direction:column;}
+  .layout { position:relative; z-index:1; width:100vw; height:100vh; display:grid; grid-template-columns:230px 1fr; grid-template-rows:40px 1fr 90px; }
+  /* Слой окна: перетаскивание + кнопки — всегда поверх сплэша, Now Playing и модалок.
+     Зона перетаскивания бесцветна (еле заметна), кнопки — компактные глифы слева. */
+  .win-layer { position:fixed; top:0; left:0; right:0; height:40px; z-index:4100;
+    display:flex; align-items:center; justify-content:flex-start; padding-left:8px;
+    -webkit-user-select:none; user-select:none;
+    --wails-draggable: drag; }
+  .sidebar { grid-column:1; grid-row:2/span 2; padding:20px 14px; background:var(--panel-bg); border-right:1px solid var(--border); backdrop-filter:blur(var(--blur)); display:flex; flex-direction:column;}
   .logo-block { margin-bottom:30px; }
   .app-version { margin:4px 0 0 2px; font-size:11px; letter-spacing:1px; color:var(--muted); opacity:.8; }
   .logo { display:flex; align-items:center; font-size:30px; font-weight:700; line-height:30px; color:var(--text); letter-spacing:0.5px;}
@@ -415,12 +452,14 @@
   .updates-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--muted); font-size:13px; cursor:pointer; transition:0.15s ease; }
   .updates-btn:hover { color:var(--text); border-color:rgba(var(--accent-rgb),0.4); }
   .updates-btn .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); }
-  .nav { display:flex; flex-direction:column; gap:6px;}
-  .nav button { padding:12px; border:none; background:transparent; color:var(--muted); text-align:left; cursor:pointer; border-radius:8px;}
-  .nav button.active { background:rgba(var(--accent-rgb),0.1); color:var(--text);}
-  .content { grid-column:2; grid-row:1; overflow:auto; padding:24px; display:grid; grid-template-rows:minmax(0,1fr); grid-template-columns:minmax(0,1fr);}
+  .nav { position:relative; display:flex; flex-direction:column; gap:6px;}
+  .nav-ind { position:absolute; left:0; right:0; top:0; border-radius:8px; background:rgba(var(--accent-rgb),0.1); pointer-events:none; opacity:0; }
+  .nav-ind.ready { opacity:1; transition:transform .45s cubic-bezier(.22,.8,.3,1), height .45s cubic-bezier(.22,.8,.3,1); }
+  .nav button { position:relative; z-index:1; transition:color .3s ease; padding:12px; border:none; background:transparent; color:var(--muted); text-align:left; cursor:pointer; border-radius:8px;}
+  .nav button.active { color:var(--text);}
+  .content { grid-column:2; grid-row:2; overflow:auto; padding:24px; display:grid; grid-template-rows:minmax(0,1fr); grid-template-columns:minmax(0,1fr);}
   .page-wrap { grid-area:1/1; min-width:0; min-height:0;}
-  .player-bar { grid-column:2; grid-row:2; display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; padding:12px 24px; background:var(--panel-bg); border-top:1px solid var(--border); backdrop-filter:blur(var(--blur));}
+  .player-bar { grid-column:2; grid-row:3; display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; padding:12px 24px; background:var(--panel-bg); border-top:1px solid var(--border); backdrop-filter:blur(var(--blur));}
   .track-info { overflow:hidden; display:flex; align-items:center; gap:12px; min-width:0;}
   .cover { position:relative; font-size:24px; width:56px; height:56px; min-width:56px; flex:0 0 56px; border-radius:8px; background:var(--item-bg); overflow:hidden; display:flex; align-items:center; justify-content:center;}
   .cover img { width:100%; height:100%; object-fit:cover;}
@@ -429,7 +468,7 @@
   .subtitle { font-size:12px; color:var(--muted); min-height:15px;}
   .player-controls { display:flex; flex-direction:column; align-items:center; gap:8px;}
   .controls { display:flex; gap:16px; align-items:center;}
-  .nav-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px;}
+  .nav-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;}
   .mode-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:19px; padding:4px; display:flex; transition:color .25s ease, transform .15s ease;}
   .mode-btn:hover { color:var(--text); }
   .mode-btn:active { transform:scale(0.9); }

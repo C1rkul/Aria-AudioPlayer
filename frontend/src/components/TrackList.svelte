@@ -2,6 +2,7 @@
   // Компактный список треков: клик — играть, перетаскивание — смена порядка, ✕ — убрать.
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { autohideScroll } from '../lib/autohide-scroll.js';
+  import NoteIcon from './NoteIcon.svelte';
 
   export let items = [];          // массив треков
   export let activeId = null;     // играющий трек
@@ -100,7 +101,7 @@
         on:click={() => play(t.id)}
         on:keypress={(e) => e.key === 'Enter' && play(t.id)}>
         <span class="n">{i + 1}</span>
-        <span class="cv">{#if t.coverPath && streamBase}<img src={coverUrl(t.coverPath)} alt="" draggable="false" />{:else}🎵{/if}</span>
+                <span class="cv">{#if t.coverPath && streamBase}<img src={coverUrl(t.coverPath)} alt="" draggable="false" />{:else}<NoteIcon />{/if}</span>
         <span class="tx"><span class="ti">{t.title}</span><span class="ar">{t.artist || ''}</span></span>
         <span class="du">{fmt(t.duration)}</span>
         {#if removable}<button class="rm" title="Убрать" on:click|stopPropagation={() => dispatch('remove', t.id)}>✕</button>{/if}

@@ -1,5 +1,6 @@
 <script>
   import { autohideScroll } from '../lib/autohide-scroll.js';
+  import NoteIcon from './NoteIcon.svelte';
   import { AddLocalFiles, AddLocalFolder, OpenLocalFolderDialog, SaveTracks } from '../../wailsjs/go/main/App';
   import { tracks, currentIndex, persistTracks, addTracksDedup, moveTrack } from '../stores/player.js';
   import { forgetTrack, playlists, createPlaylist, renamePlaylist, deletePlaylist, addToPlaylist, removeFromPlaylist, moveInPlaylist } from '../stores/playlists.js';
@@ -318,7 +319,7 @@
                 {#if track.coverPath && streamBase}
                   <img src={coverUrl(track.coverPath)} alt="" />
                 {:else}
-                  🎵
+                  <NoteIcon />
                 {/if}
               </div>
               <div class="track-main">

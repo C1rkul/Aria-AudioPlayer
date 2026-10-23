@@ -324,7 +324,34 @@
 
     <div class="card">
       <h3>Кроссфейд</h3>
-      <p class="hint placeholder">Кроссфейд (fadeout / fadein) в процессе разработки.</p>
+
+      <div class="switch-row restore-row">
+        <span>Плавный переход между треками</span>
+        <label class="switch">
+          <input
+            type="checkbox"
+            role="switch"
+            aria-label="Кроссфейд при переключении треков"
+            checked={$settings.crossfadeEnabled}
+            on:change={(e) => updateSettings({ crossfadeEnabled: e.currentTarget.checked })}
+          />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      {#if $settings.crossfadeEnabled}
+        <RangeField
+          id="crossfade-duration"
+          label="Длительность перехода"
+          min={1}
+          max={12}
+          step={0.5}
+          value={$settings.crossfadeDuration ?? 5}
+          format={(v) => `${v} с`}
+          on:change={(e) => updateSettings({ crossfadeDuration: e.detail })}
+        />
+        <p class="hint">Старый трек плавно затухает, новый плавно вступает — при автоматическом переходе к следующему треку и в конце очереди (затихание). Любые ручные переключения — всегда мгновенные.</p>
+      {/if}
     </div>
 
     <div class="card">

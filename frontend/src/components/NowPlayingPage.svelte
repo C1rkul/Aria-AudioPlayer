@@ -16,6 +16,7 @@
   import BackgroundFX from './BackgroundFX.svelte';
   import PlayPauseIcon from './PlayPauseIcon.svelte';
   import VolumeIcon from './VolumeIcon.svelte';
+  import SkipIcon from './SkipIcon.svelte';
   import { fetchLyrics } from '../lib/lyrics.js';
 
   export let streamBaseUrl = '';
@@ -249,9 +250,15 @@
     album = '';
   }
 
+  let closeTimer;
   function handleBackgroundClick() {
-    // Закрываем модалку
-    window.dispatchEvent(new CustomEvent('close-now-playing'));
+    if (closing) return; // повтор (ESC/клик/✕) во время ухода — не дёргаем
+    // CSS-уход: быстрый переход через класс .closing, App размонтирует оверлей по его окончании
+    closing = true;
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('close-now-playing'));
+    }, 210);
   }
   
   function handleKeydown(event) {
@@ -270,11 +277,8 @@
   class:closing
   bind:this={rootEl}
   on:introend={() => (introDone = true)}
-  on:outrostart={() => (closing = true)}
   in:fly|global={{ y: 720, duration: 650, easing: cubicOut, opacity: 1 }}
-  out:fly|global={{ y: 720, duration: 480, easing: cubicIn, opacity: 1 }}
   style={adaptive ? `background-color:${adaptiveColor}` : ''}
-  on:click|self={handleBackgroundClick}
   role="dialog"
   aria-modal="true"
   aria-label="Режим Now Playing"
@@ -324,7 +328,7 @@
                 title={$shuffleEnabled ? 'Перемешивание включено' : 'Перемешивание выключено'}>
           <ShuffleIcon />
         </button>
-        <button on:click={() => playerController.prev()} title="Предыдущий">⏮</button>
+        <button on:click={() => playerController.prev()} title="Предыдущий"><SkipIcon back /></button>
         <button
           class="main-play"
           on:click={() => playerController.togglePlay()}
@@ -332,7 +336,7 @@
         >
           <PlayPauseIcon playing={$isPlaying} />
         </button>
-        <button on:click={() => playerController.next()} title="Следующий">⏭</button>
+        <button on:click={() => playerController.next()} title="Следующий"><SkipIcon /></button>
         <button class="mode" class:on={$repeatMode !== 'off'}
                 on:click={() => repeatMode.update((v) => (v === 'off' ? 'all' : v === 'all' ? 'one' : 'off'))}
                 title={$repeatMode === 'one' ? 'Повтор: один трек' : $repeatMode === 'all' ? 'Повтор: весь список' : 'Повтор выключен'}>
@@ -472,7 +476,8 @@
     inset: 0;
     background: var(--bg, #0f0f12);
     color: var(--text, #fff);
-    transition: background-color 0.8s ease;
+    /* фон — свой плавный переход; opacity/transform применяются только при .closing (CSS-уход) */
+    transition: background-color 0.8s ease, opacity 0.16s ease-in, transform 0.2s cubic-bezier(0.4, 0, 1, 1);
     will-change: transform;
     z-index: 1000;
     display: flex;
@@ -480,7 +485,10 @@
     justify-content: center;
   }
 
-  .now-playing-overlay.closing, .now-playing-overlay.closing :global(*) { transition: none !important; animation-play-state: paused !important; }
+  /* CSS-уход: быстрый снос вниз с фейдом (~0.2 c) — после таймера App снимает оверлей */
+  .now-playing-overlay.closing { opacity: 0; transform: translateY(56px); }
+  /* внутренние переходы/анимации замораживаются, чтобы ничего не «догоняло» во время ухода */
+  .now-playing-overlay.closing :global(*) { transition: none !important; animation-play-state: paused !important; }
 
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -608,7 +616,9 @@
   .panel-tabs button.active { background: rgba(var(--accent-rgb), 0.28); border-color: rgba(var(--accent-rgb), 0.5); color: var(--text, #fff); }
   .panel-body { position: relative; flex: 1; min-height: 240px; overflow: hidden; }
   .pane { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
-  .tune { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; scrollbar-width: thin; }
+  /* вкладка «Настройки»: скролл работает (колесо/перетаскивание), но полоса прокрутки не видна */
+  .tune { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; scrollbar-width: none; }
+  .tune::-webkit-scrollbar { display: none; width: 0; height: 0; }
   .tune-card { padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(127,127,127,0.25); background: rgba(127,127,127,0.07); text-align: left; }
   .tune-card.soon { border-style: dashed; opacity: 0.7; }
   .tune-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }

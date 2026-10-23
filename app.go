@@ -74,6 +74,8 @@ type Settings struct {
 	LyricsAPIURL       string  `json:"lyricsApiUrl"`
 	CustomAccent       string  `json:"customAccent"`
 	DefaultVolume      float64 `json:"defaultVolume"`
+	CrossfadeEnabled   bool    `json:"crossfadeEnabled"`
+	CrossfadeDuration  float64 `json:"crossfadeDuration"` // секунды: длительность плавного перехода
 	RestoreLastTrack   bool    `json:"restoreLastTrack"`
 	DataFolder         string  `json:"dataFolder"`
 	LastTrackID        string  `json:"lastTrackId"`
@@ -133,24 +135,25 @@ func defaultAppDir() (string, error) {
 func defaultSettings() Settings {
 	dir, _ := defaultAppDir()
 	return Settings{
-		Theme:            "dark",
-		Design:           "normal",
-		Background:       "none",
-		Palette:          "base",
-		NeonFrame:        true,
-		ParticleCount:    60,
-		BabbleCount:      22,
-		MatrixSpeed:      1.0,
-		MatrixDensity:    100,
-		AuroraCount:      5,
-		VizPreset:        "base",
-		VizBars:          48,
-		CustomAccent:     "#7c5cff",
-		DefaultVolume:    0.5,
-		RestoreLastTrack: false,
-		DataFolder:       dir,
-		LastTrackID:      "",
-		LastPosition:     0,
+		Theme:             "dark",
+		Design:            "normal",
+		Background:        "none",
+		Palette:           "base",
+		NeonFrame:         true,
+		ParticleCount:     60,
+		BabbleCount:       22,
+		MatrixSpeed:       1.0,
+		MatrixDensity:     100,
+		AuroraCount:       5,
+		VizPreset:         "base",
+		VizBars:           48,
+		CustomAccent:      "#7c5cff",
+		DefaultVolume:     0.5,
+		CrossfadeDuration: 5,
+		RestoreLastTrack:  false,
+		DataFolder:        dir,
+		LastTrackID:       "",
+		LastPosition:      0,
 	}
 }
 
@@ -192,6 +195,11 @@ func normalizeSettings(s *Settings) {
 	}
 	if s.DefaultVolume < 0 || s.DefaultVolume > 1 {
 		s.DefaultVolume = 0.5
+	}
+
+	// Кроссфейд: длительность 1–12 секунд (иначе значение по умолчанию)
+	if s.CrossfadeDuration < 1 || s.CrossfadeDuration > 12 {
+		s.CrossfadeDuration = 5
 	}
 
 	s.ParticleCount = clampInt(s.ParticleCount, 10, 200, 60)

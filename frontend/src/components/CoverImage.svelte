@@ -1,6 +1,8 @@
 <script>
   import { fade } from 'svelte/transition';
+  import NoteIcon from './NoteIcon.svelte';
   export let src = '';
+  // placeholder оставлен для совместимости; вместо эмодзи-строки рисуется NoteIcon
   export let placeholder = '🎵';
   export let duration = 380;
 </script>
@@ -11,7 +13,7 @@
       {#if src}
         <img {src} alt="" />
       {:else}
-        <span class="ph">{placeholder}</span>
+        <span class="ph"><NoteIcon /></span>
       {/if}
     </div>
   {/key}

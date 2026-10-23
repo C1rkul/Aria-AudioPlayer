@@ -20,6 +20,8 @@ export const defaultSettings = {
   lyricsApiUrl: '',
   customAccent: '#7c5cff',
   defaultVolume: 0.5,
+  crossfadeEnabled: false,
+  crossfadeDuration: 5, // секунды: длительность плавного перехода между треками
   restoreLastTrack: false,
   dataFolder: '',
   lastTrackId: '',

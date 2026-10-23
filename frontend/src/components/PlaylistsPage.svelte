@@ -4,6 +4,8 @@
   import { flip } from 'svelte/animate';
   import { cubicOut } from 'svelte/easing';
   import { tracks } from '../stores/player.js';
+  import NoteIcon from '../components/NoteIcon.svelte';
+  import PlayPauseIcon from '../components/PlayPauseIcon.svelte';
   import { playlists, createPlaylist, renamePlaylist, deletePlaylist } from '../stores/playlists.js';
   import { pendingPlayerTab } from '../stores/ui.js';
   import { playerController } from '../lib/player-controller.js';
@@ -75,7 +77,7 @@
 
   {#if cards.length === 0}
     <div class="empty" in:fade={{ duration: 250 }}>
-      <div class="empty-icon">♫</div>
+      <div class="empty-icon"><NoteIcon /></div>
       <p>У вас пока нет плейлистов</p>
       <button class="new-btn" on:click={create}>Создать первый</button>
     </div>
@@ -90,14 +92,14 @@
           out:scale={{ start: 0.92, duration: 220 }}>
           <div class="mosaic" class:single={card.covers.length === 1}>
             {#if card.covers.length === 0}
-              <div class="ph">♫</div>
+              <div class="ph"><NoteIcon /></div>
             {:else}
               {#each card.covers as t (t.id)}
                 <img src={coverUrl(t.coverPath)} alt="" />
               {/each}
             {/if}
             <button class="play" title="Играть" disabled={!card.list.length}
-              on:click|stopPropagation={() => play(card)}>▶</button>
+              on:click|stopPropagation={() => play(card)}><PlayPauseIcon /></button>
           </div>
           <div class="info">
             {#if editingId === card.pl.id}
