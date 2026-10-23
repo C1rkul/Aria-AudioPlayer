@@ -50,8 +50,8 @@
 ## Скриншоты
 
 <!-- Добавьте скриншоты в папку docs/ и раскомментируйте / Put screenshots into docs/ and uncomment:
-![Main window](docs/main.png)
-![Now Playing](docs/now-playing.png)
+![Main window](frontend/docs/main.png)
+![Now Playing](frontend/docs/now-playing.png)
 -->
 
 ## Установка
