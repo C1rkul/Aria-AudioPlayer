@@ -1,8 +1,12 @@
+<script>
+  import { APP_NAME, APP_VERSION } from '../lib/version.js';
+</script>
+
 <section class="page">
   <div class="body">
     <h2>О приложении</h2>
 
-    <p><strong>Aria</strong> — аудио-плеер на Go + Wails v2.</p>
+    <p><strong>{APP_NAME}</strong> — аудио-плеер на Go + Wails v2.</p>
 
     <div class="tech">
       <span class="badge">Go</span>
@@ -11,7 +15,7 @@
       <span class="badge">Vite</span>
     </div>
 
-    <p class="version">Версия: 0.1.0-beta</p>
+    <p class="version">Версия: {APP_VERSION}</p>
   </div>
 
   <footer class="credit">made by C1RKUL &amp; Claude x Qwen</footer>

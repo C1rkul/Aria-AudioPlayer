@@ -6,14 +6,10 @@
 
 Локальный аудио-плеер на Go + Wails + Svelte · A local audio player built with Go + Wails + Svelte
 
-`v0.1.0-beta`
+`v0.2.0-beta`
 
 </div>
 
-<!-- Добавьте скриншоты в папку docs/ и раскомментируйте / Put screenshots into docs/ and uncomment:
-![Main window](docs/main.png)
-![Now Playing](docs/now-playing.png)
--->
 
 ---
 
@@ -53,7 +49,10 @@
 
 ## Скриншоты
 
-Скоро. 
+<!-- Добавьте скриншоты в папку docs/ и раскомментируйте / Put screenshots into docs/ and uncomment:
+![Main window](docs/main.png)
+![Now Playing](docs/now-playing.png)
+-->
 
 ## Установка
 
@@ -107,13 +106,15 @@ build/            иконки и ресурсы сборки
 
 Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https://github.com/dhowden/tag) (теги и обложки).
 
+## Документация для разработчика
+
+См. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — какие файлы за что отвечают.
+
 ## Планы
 
 - Кроссфейд (fadeout / fadein) между треками — заготовка в настройках.
 - Поиск текстов песен через внешний API — поле для ссылки и парсер уже подготовлены.
 - Внешние источники музыки (вкладка «Внешние»).
-
-⚠️ Примечание: у приложения пока нет собственной иконки: оно находится в стадии беты. Иконка появится в одной из следующих версий.
 
 ## Авторы
 
@@ -159,7 +160,10 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Screenshots
 
-Coming soon. 
+<!-- Добавьте скриншоты в папку docs/ и раскомментируйте / Put screenshots into docs/ and uncomment:
+![Main window](docs/main.png)
+![Now Playing](docs/now-playing.png)
+-->
 
 ## Installation
 
@@ -213,13 +217,15 @@ build/            icons and build resources
 
 Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https://github.com/dhowden/tag) (tags and cover art).
 
+## Developer docs
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — which file does what.
+
 ## Roadmap
 
 - Crossfade (fade-out / fade-in) between tracks — a placeholder card is already in Settings.
 - Lyrics via an external API — the URL field and the response parser are prepared.
 - External music sources (the "External" tab).
-
-⚠️ Note: the app doesn't have its own icon yet, since it is still in beta. The icon will be added in one of the upcoming versions.
 
 ## Credits
 

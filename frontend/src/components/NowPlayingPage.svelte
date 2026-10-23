@@ -1,5 +1,9 @@
 <script>
-  import { currentTrack, isPlaying, repeatMode, shuffleEnabled } from '../stores/player.js';
+  import { currentTrack, isPlaying, repeatMode, shuffleEnabled, tracks } from '../stores/player.js';
+  import { playlists, queue, ALL_ID, moveInPlaylist, removeFromPlaylist } from '../stores/playlists.js';
+  import TrackList from './TrackList.svelte';
+  import { slide } from 'svelte/transition';
+  import { updateSettings } from '../stores/settings.js';
   import { fly } from 'svelte/transition';
   import { cubicOut, cubicIn } from 'svelte/easing';
   import CoverImage from './CoverImage.svelte';
@@ -12,14 +16,14 @@
   import BackgroundFX from './BackgroundFX.svelte';
   import PlayPauseIcon from './PlayPauseIcon.svelte';
   import VolumeIcon from './VolumeIcon.svelte';
-  import { updateSettings } from '../stores/settings.js';
   import { fetchLyrics } from '../lib/lyrics.js';
 
   export let streamBaseUrl = '';
 
   // --- тайминг и громкость ---
   const { currentTime, duration } = playerController;
-  $: volume = $settings.defaultVolume ?? 0.5;
+  const volumeStore = playerController.volume;
+  $: volume = $volumeStore;
   $: progress = $duration > 0 ? ($currentTime / $duration) * 100 : 0;
 
   function fmt(sec) {
@@ -29,11 +33,63 @@
   function onSeek(e) { playerController.seek(Number(e.target.value)); }
   function onVolume(e) {
     const v = Number(e.target.value) / 100;
-    playerController.setTargetVolume(v);
-    updateSettings({ defaultVolume: v });
+    playerController.setVolume(v);
   }
 
   // --- текст трека (заготовка под внешний API) ---
+  // --- правая панель: Текст / Очередь / Плейлист ---
+  const PANELS = ['lyrics', 'queue', 'playlist', 'tune'];
+  const PANEL_NAMES = { lyrics: 'Текст', queue: 'Очередь', playlist: 'Плейлист', tune: 'Настройки' };
+  const speedStore = playerController.speed;
+  const pitchStore = playerController.pitch;
+  const linkedStore = playerController.tempoLinked;
+  const TEMPO_PRESETS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const fmtX = (n) => n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + '×';
+  $: pitch = $pitchStore;
+  $: linked = $linkedStore;
+
+  // --- визуализатор: пресеты ---
+  const VIZ_PRESETS = [['base', 'Обычный'], ['circle', 'Круглый'], ['big', 'Большой']];
+  $: vizPreset = $settings.vizPreset || 'base';
+  $: vizBars = Math.min(128, Math.max(8, $settings.vizBars || 48));
+  $: vizSpin = !!$settings.vizSpin;
+  let rootEl;
+  const EQ_BANDS = ['60', '170', '310', '600', '1k', '3k', '6k', '12k', '14k', '16k'];
+  $: speed = $speedStore;
+  let panel = 'lyrics';
+  let panelDir = 1;
+  function setPanel(p) {
+    if (p === panel) return;
+    panelDir = PANELS.indexOf(p) >= PANELS.indexOf(panel) ? 1 : -1;
+    panel = p;
+  }
+
+  $: byId = new Map($tracks.map((t) => [t.id, t]));
+  $: activeId = $currentTrack?.id ?? null;
+
+  $: queueIds = $queue.sourceId === ALL_ID ? $tracks.map((t) => t.id) : $queue.trackIds.filter((id) => byId.has(id));
+  $: queueItems = queueIds.map((id) => byId.get(id));
+  $: queueSource = $queue.sourceId === ALL_ID ? 'Все песни'
+    : $playlists.find((p) => p.id === $queue.sourceId)?.name
+      ?? ($queue.sourceId === 'search' ? 'Результаты поиска' : 'Своя очередь');
+  function queuePlay(e) {
+    const id = e.detail;
+    if (id === activeId) playerController.togglePlay();
+    else playerController.playFrom($queue.sourceId, queueIds, id);
+  }
+
+  let plPick = null;
+  $: plDefault = $playlists.some((p) => p.id === $queue.sourceId) ? $queue.sourceId
+    : ($playlists.find((p) => p.trackIds.includes(activeId))?.id ?? $playlists[0]?.id ?? null);
+  $: plId = plPick && $playlists.some((p) => p.id === plPick) ? plPick : plDefault;
+  $: plObj = $playlists.find((p) => p.id === plId) || null;
+  $: plItems = plObj ? plObj.trackIds.map((id) => byId.get(id)).filter(Boolean) : [];
+  function plPlay(e) {
+    const id = e.detail;
+    if (id === activeId) playerController.togglePlay();
+    else playerController.playFrom(plId, plItems.map((t) => t.id), id);
+  }
+
   let lyrics = { status: 'disabled', text: '' };
   let lyricsToken = 0;
   $: loadLyrics($currentTrack);
@@ -50,7 +106,6 @@
     error: 'Не удалось загрузить текст.'
   };
 
-  let canvas;
   let raf;
 
   // Состояние выезда страницы: тяжёлые вещи (аудио-анализатор, цвет обложки) стартуют только после него
@@ -58,37 +113,77 @@
   let closing = false;
   let vizStarted = false;
 
-  $: if (introDone && canvas && !vizStarted) { vizStarted = true; startViz(); }
+  $: if (introDone && rootEl && !vizStarted) { vizStarted = true; startViz(); }
 
   function startViz() {
     const analyser = playerController.getAnalyser();
-    const ctx = canvas.getContext('2d');
     const data = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
-    const bars = 48;
 
     function draw() {
       raf = requestAnimationFrame(draw);
-      const w = canvas.width, h = canvas.height;
+      const cv = rootEl && rootEl.querySelector('canvas.viz');
+      if (!cv) return;
+      const ctx = cv.getContext('2d');
+      if (vizPreset === 'big') {
+        const cw = cv.clientWidth, ch = cv.clientHeight;
+        if (cw && ch && (cv.width !== cw || cv.height !== ch)) { cv.width = cw; cv.height = ch; }
+      }
+      const w = cv.width, h = cv.height;
       ctx.clearRect(0, 0, w, h);
       if (!analyser) return;
       if (playerController.audioCtx?.state === 'suspended') playerController.audioCtx.resume();
       analyser.getByteFrequencyData(data);
       const rgb = getComputedStyle(document.body).getPropertyValue('--accent-rgb').trim() || '124,92,255';
-      const gap = 3, bw = (w - gap * (bars - 1)) / bars;
       const usable = Math.floor(data.length * 0.75); // верхние частоты почти пустые
-      for (let i = 0; i < bars; i++) {
-        const v = data[Math.floor((i / bars) * usable)] / 255;
-        const bh = Math.max(3, v * h);
-        ctx.fillStyle = `rgba(${rgb}, ${0.35 + v * 0.65})`;
-        ctx.beginPath();
-        ctx.roundRect(i * (bw + gap), h - bh, bw, bh, 2);
-        ctx.fill();
+      const bars = vizBars;
+      const lvl = (t) => data[Math.min(usable - 1, Math.floor(t * usable))] / 255;
+
+      if (vizPreset === 'circle') {
+        // колонки по кругу вокруг обложки; частоты отражены, чтобы на стыке не было скачка
+        const cx = w / 2, cy = h / 2, r0 = 124;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = Math.max(2, Math.min(9, (2 * Math.PI * r0) / bars * 0.55));
+        for (let i = 0; i < bars; i++) {
+          const t = i < bars / 2 ? i / (bars / 2) : (bars - i) / (bars / 2);
+          const v = lvl(t);
+          const a = (i / bars) * Math.PI * 2 - Math.PI / 2;
+          const len = 4 + v * 48;
+          ctx.strokeStyle = `rgba(${rgb}, ${0.35 + v * 0.65})`;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+          ctx.lineTo(cx + Math.cos(a) * (r0 + len), cy + Math.sin(a) * (r0 + len));
+          ctx.stroke();
+        }
+      } else if (vizPreset === 'big') {
+        // большой фоновый визуализатор: басы в центре, высокие по краям
+        const gap = 3, bw = Math.max(2, (w - gap * (bars - 1)) / bars);
+        for (let i = 0; i < bars; i++) {
+          const t = Math.abs((2 * i) / Math.max(1, bars - 1) - 1);
+          const v = lvl(t);
+          const bh = Math.max(4, Math.pow(v, 1.25) * h * 0.95);
+          ctx.fillStyle = `rgba(${rgb}, ${0.18 + v * 0.32})`;
+          ctx.beginPath();
+          ctx.roundRect(i * (bw + gap), h - bh, bw, bh, Math.min(6, bw / 2));
+          ctx.fill();
+        }
+      } else {
+        const gap = 3, bw = Math.max(1, (w - gap * (bars - 1)) / bars);
+        for (let i = 0; i < bars; i++) {
+          const v = lvl(i / bars);
+          const bh = Math.max(3, v * h);
+          ctx.fillStyle = `rgba(${rgb}, ${0.35 + v * 0.65})`;
+          ctx.beginPath();
+          ctx.roundRect(i * (bw + gap), h - bh, bw, bh, Math.min(2, bw / 2));
+          ctx.fill();
+        }
       }
     }
     draw();
   }
 
   onMount(() => () => cancelAnimationFrame(raf));
+  // при закрытии замораживаем визуализатор — страница уезжает без лишней работы
+  $: if (closing) cancelAnimationFrame(raf);
 
   let coverUrl = '';
 
@@ -172,6 +267,8 @@
 <div 
   class="now-playing-overlay"
   class:adaptive
+  class:closing
+  bind:this={rootEl}
   on:introend={() => (introDone = true)}
   on:outrostart={() => (closing = true)}
   in:fly|global={{ y: 720, duration: 650, easing: cubicOut, opacity: 1 }}
@@ -184,12 +281,20 @@
   tabindex="-1"
 >
   {#if !adaptive}
-    <BackgroundFX />
+    <BackgroundFX active={!closing} />
+  {/if}
+  {#if vizPreset === 'big'}
+    <canvas class="viz viz-big" width="800" height="400"></canvas>
   {/if}
   <div class="np-container" class:designed={!adaptive && $settings.design !== 'normal'}>
     <div class="np-main">
-      <div class="np-artwork">
-        <CoverImage src={coverUrl} placeholder="🎵" duration={450} />
+      <div class="art-stage" class:circle={vizPreset === 'circle'}>
+        {#if vizPreset === 'circle'}
+          <canvas class="viz viz-ring" class:spin={vizSpin} width="400" height="400"></canvas>
+        {/if}
+        <div class="np-artwork" class:round={vizPreset === 'circle'}>
+          <CoverImage src={coverUrl} placeholder="🎵" duration={450} />
+        </div>
       </div>
 
       <div class="np-info">
@@ -198,7 +303,9 @@
         <p class="album">{album}</p>
       </div>
 
-      <canvas class="visualizer" bind:this={canvas} width="480" height="64"></canvas>
+      {#if vizPreset === 'base'}
+        <canvas class="visualizer viz" width="480" height="64"></canvas>
+      {/if}
 
       <div class="np-seek">
         <span class="np-time">{fmt($currentTime)}</span>
@@ -247,13 +354,111 @@
     </div>
 
     <aside class="np-lyrics">
-      <h2>Текст</h2>
-      <div class="lyrics-body">
-        {#if lyrics.status === 'found'}
-          <pre>{lyrics.text}</pre>
-        {:else}
-          <p class="lyrics-empty">{LYRICS_HINTS[lyrics.status] || LYRICS_HINTS.disabled}</p>
-        {/if}
+      <div class="panel-tabs">
+        {#each PANELS as p}
+          <button class:active={panel === p} on:click={() => setPanel(p)}>{PANEL_NAMES[p]}</button>
+        {/each}
+      </div>
+      <div class="panel-body">
+        {#key panel}
+          <div class="pane"
+            in:fly|global={{ x: panelDir * 40, duration: 280, delay: 100, easing: cubicOut, opacity: 0 }}
+            out:fly|global={{ x: -panelDir * 40, duration: 150, easing: cubicIn, opacity: 0 }}>
+            {#if panel === 'lyrics'}
+              <div class="lyrics-scroll">
+                {#if lyrics.status === 'found'}
+                  <pre>{lyrics.text}</pre>
+                {:else}
+                  <p class="lyrics-empty">{LYRICS_HINTS[lyrics.status] || LYRICS_HINTS.disabled}</p>
+                {/if}
+              </div>
+            {:else if panel === 'queue'}
+              <div class="pane-sub">Источник: {queueSource} · {queueItems.length}</div>
+              <div class="pane-list">
+                <TrackList items={queueItems} {activeId} streamBase={streamBaseUrl} reorderable removable
+                  emptyText="Очередь пуста. Запустите трек из списка."
+                  on:play={queuePlay}
+                  on:move={(e) => playerController.moveInQueue(e.detail.from, e.detail.to)}
+                  on:remove={(e) => playerController.removeFromQueue(e.detail)} />
+              </div>
+            {:else if panel === 'tune'}
+              <div class="tune">
+                <div class="tune-card">
+                  <div class="tune-head">
+                    <h3>Скорость и тон</h3>
+                    <button class="link-btn" class:on={linked} on:click={() => playerController.setTempoLinked(!linked)}
+                      title={linked ? 'Связаны: меняются вместе. Нажмите, чтобы разделить' : 'Раздельно. Нажмите, чтобы связать'}>
+                      {linked ? '🔗 Связаны' : '⛓ Раздельно'}
+                    </button>
+                  </div>
+                  <div class="tune-row"><span>Скорость</span><span class="tune-val">{fmtX(speed)}</span></div>
+                  <div class="chips">
+                    {#each TEMPO_PRESETS as v}
+                      <button class:active={Math.abs(speed - v) < 0.001} on:click={() => playerController.setSpeed(v)}>{fmtX(v)}</button>
+                    {/each}
+                  </div>
+                  <div class="tune-row"><span>Тон</span><span class="tune-val">{fmtX(pitch)}</span></div>
+                  <div class="chips">
+                    {#each TEMPO_PRESETS as v}
+                      <button class:active={Math.abs(pitch - v) < 0.001} on:click={() => playerController.setPitch(v)}>{fmtX(v)}</button>
+                    {/each}
+                  </div>
+                  <p class="tune-note">
+                    {linked ? 'Связаны: меняются вместе, как у пластинки — тон растёт и падает вместе со скоростью.' : 'Раздельно: скорость меняется без изменения тона, а тон — без изменения скорости.'}
+                    Сбрасывается при перезапуске.
+                  </p>
+                </div>
+
+                <div class="tune-card">
+                  <div class="tune-head"><h3>Визуализатор</h3><span class="tune-val">{vizBars}</span></div>
+                  <div class="chips no-top">
+                    {#each VIZ_PRESETS as [id, name]}
+                      <button class:active={vizPreset === id} on:click={() => updateSettings({ vizPreset: id })}>{name}</button>
+                    {/each}
+                  </div>
+                  <div class="tune-row"><span>Количество колонок</span></div>
+                  <input type="range" min="8" max="128" step="1" aria-label="Количество колонок"
+                    value={vizBars} style="--fill-percent:{((vizBars - 8) / 120) * 100}%"
+                    on:input={(e) => updateSettings({ vizBars: Number(e.currentTarget.value) })} />
+                  {#if vizPreset === 'circle'}
+                    <div transition:slide={{ duration: 220 }}>
+                      <button class="spin-btn" class:on={vizSpin} on:click={() => updateSettings({ vizSpin: !vizSpin })}>
+                        ↻ Вращение по часовой: {vizSpin ? 'вкл' : 'выкл'}
+                      </button>
+                    </div>
+                  {/if}
+                </div>
+
+                <div class="tune-card soon">
+                  <div class="tune-head"><h3>Эквалайзер</h3><span class="badge">в разработке</span></div>
+                  <div class="eq">
+                    {#each EQ_BANDS as f}
+                      <div class="eq-band"><div class="eq-bar"><span></span></div><small>{f}</small></div>
+                    {/each}
+                  </div>
+                </div>
+
+              </div>
+            {:else}
+              {#if $playlists.length === 0}
+                <p class="lyrics-empty">Плейлистов пока нет. Создайте плейлист на вкладке «Плеер» или на странице «Плейлисты».</p>
+              {:else}
+                <div class="pl-chips">
+                  {#each $playlists as pl (pl.id)}
+                    <button class:active={pl.id === plId} on:click={() => (plPick = pl.id)} title={pl.name}>{pl.name}</button>
+                  {/each}
+                </div>
+                <div class="pane-list">
+                  <TrackList items={plItems} {activeId} streamBase={streamBaseUrl} reorderable removable
+                    emptyText="В плейлисте пока нет треков."
+                    on:play={plPlay}
+                    on:move={(e) => moveInPlaylist(plId, e.detail.from, e.detail.to)}
+                    on:remove={(e) => removeFromPlaylist(plId, e.detail)} />
+                </div>
+              {/if}
+            {/if}
+          </div>
+        {/key}
       </div>
     </aside>
 
@@ -268,11 +473,14 @@
     background: var(--bg, #0f0f12);
     color: var(--text, #fff);
     transition: background-color 0.8s ease;
+    will-change: transform;
     z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
+  .now-playing-overlay.closing, .now-playing-overlay.closing :global(*) { transition: none !important; animation-play-state: paused !important; }
 
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -318,10 +526,18 @@
   .now-playing-overlay.adaptive .np-controls button,
   .now-playing-overlay.adaptive .close-btn { color: #fff; }
 
+  .art-stage { position: relative; width: 240px; height: 240px; margin: 0 auto 20px; transition: margin 0.4s ease; }
+  .art-stage.circle { margin: 34px auto 54px; }
+  .viz-ring { position: absolute; left: 50%; top: 50%; width: 400px; height: 400px; margin: -200px 0 0 -200px; pointer-events: none; }
+  .viz-ring.spin { animation: vizspin 28s linear infinite; }
+  @keyframes vizspin { to { transform: rotate(360deg); } }
+  .viz-big { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 72%; pointer-events: none; z-index: 0; }
   .np-artwork {
-    width: 240px;
-    height: 240px;
-    margin: 0 auto 20px;
+    position: relative;
+    transition: border-radius 0.45s ease;
+    width: 100%;
+    height: 100%;
+    margin: 0;
     font-size: 80px;
     border-radius: 16px;
     overflow: hidden;
@@ -331,6 +547,8 @@
     align-items: center;
     justify-content: center;
   }
+
+  .np-artwork.round { border-radius: 50%; }
 
   .np-artwork img {
     width: 100%;
@@ -384,9 +602,42 @@
     border-radius: 18px; padding: 16px 18px; box-sizing: border-box; text-align: left;
     background: rgba(127,127,127,0.07);
   }
-  .np-lyrics h2 { margin: 0 0 10px; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted, #aaa); font-weight: 600; }
-  .lyrics-body { overflow-y: auto; min-height: 220px; flex: 1; scrollbar-width: thin; }
-  .lyrics-body pre { margin: 0; white-space: pre-wrap; font: inherit; line-height: 1.7; font-size: 16px; }
+  .panel-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .panel-tabs button { padding: 6px 12px; border: 1px solid transparent; border-radius: 999px; background: rgba(127,127,127,0.14); color: var(--muted, #aaa); font-size: 13px; transition: 0.15s ease; }
+  .panel-tabs button:hover { color: var(--text, #fff); }
+  .panel-tabs button.active { background: rgba(var(--accent-rgb), 0.28); border-color: rgba(var(--accent-rgb), 0.5); color: var(--text, #fff); }
+  .panel-body { position: relative; flex: 1; min-height: 240px; overflow: hidden; }
+  .pane { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
+  .tune { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; scrollbar-width: thin; }
+  .tune-card { padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(127,127,127,0.25); background: rgba(127,127,127,0.07); text-align: left; }
+  .tune-card.soon { border-style: dashed; opacity: 0.7; }
+  .tune-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .tune-head h3 { margin: 0; font-size: 14px; }
+  .tune-val { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); }
+  .tune-card input[type=range] { width: 100%; }
+  .tune .chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .tune .chips button { padding: 4px 10px; border: 1px solid rgba(127,127,127,0.3); border-radius: 999px; background: transparent; color: var(--muted, #aaa); font-size: 12px; }
+  .tune .chips button.active { border-color: rgba(var(--accent-rgb), 0.6); background: rgba(var(--accent-rgb), 0.2); color: var(--text, #fff); }
+  .tune-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 13px; color: var(--muted, #aaa); }
+  .tune .chips.no-top { margin-top: 0; margin-bottom: 4px; }
+  .link-btn, .spin-btn { padding: 4px 10px; border: 1px solid rgba(127,127,127,0.35); border-radius: 999px; background: transparent; color: var(--muted, #aaa); font-size: 12px; transition: 0.15s ease; }
+  .link-btn.on, .spin-btn.on { border-color: rgba(var(--accent-rgb), 0.6); background: rgba(var(--accent-rgb), 0.2); color: var(--text, #fff); }
+  .spin-btn { margin-top: 10px; }
+  .tune-note { margin: 8px 0 0; font-size: 12px; color: var(--muted, #aaa); line-height: 1.5; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(127,127,127,0.2); color: var(--muted, #aaa); }
+  .eq { display: flex; justify-content: space-between; gap: 4px; height: 64px; }
+  .eq-band { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .eq-bar { flex: 1; width: 4px; border-radius: 2px; background: rgba(127,127,127,0.3); position: relative; }
+  .eq-bar span { position: absolute; left: -3px; right: -3px; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: rgba(127,127,127,0.7); }
+  .eq-band small { font-size: 9px; color: var(--muted, #aaa); }
+  .lyrics-scroll { flex: 1; overflow-y: auto; scrollbar-width: thin; }
+  .pane-sub { font-size: 12px; color: var(--muted, #aaa); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pane-list { flex: 1; min-height: 0; }
+  .pl-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: 8px; flex: 0 0 auto; }
+  .pl-chips::-webkit-scrollbar { display: none; }
+  .pl-chips button { flex: 0 0 auto; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 4px 10px; border: 1px solid rgba(127,127,127,0.3); border-radius: 999px; background: transparent; color: var(--muted, #aaa); font-size: 12px; }
+  .pl-chips button.active { border-color: rgba(var(--accent-rgb), 0.6); background: rgba(var(--accent-rgb), 0.2); color: var(--text, #fff); }
+  .lyrics-scroll pre { margin: 0; white-space: pre-wrap; font: inherit; line-height: 1.7; font-size: 16px; }
   .lyrics-empty { margin: 0; color: var(--muted, #aaa); font-size: 14px; line-height: 1.6; border: 1px dashed rgba(127,127,127,0.35); border-radius: 12px; padding: 16px; }
   .now-playing-overlay.adaptive .np-lyrics { background: rgba(0,0,0,0.22); border-color: rgba(255,255,255,0.12); }
   .now-playing-overlay.adaptive .lyrics-empty, .now-playing-overlay.adaptive .np-time, .now-playing-overlay.adaptive .np-vol-icon { color: rgba(255,255,255,0.7); }

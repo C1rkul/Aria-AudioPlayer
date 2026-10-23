@@ -1,6 +1,14 @@
 <script>
   import { settings, defaultSettings, updateSettings } from '../stores/settings.js';
   import RangeField from './RangeField.svelte';
+  import { clearTrackRefs } from '../stores/playlists.js';
+  import { fly } from 'svelte/transition';
+  import { cubicOut, cubicIn } from 'svelte/easing';
+  import { playerController } from '../lib/player-controller.js';
+  const volumeStore = playerController.volume;
+  const TAB_ORDER = { general: 0, nowplaying: 1 };
+  let dir = 1;
+  function setTab(t) { if (t === tab) return; dir = TAB_ORDER[t] > TAB_ORDER[tab] ? 1 : -1; tab = t; }
   import { tracks, currentIndex } from '../stores/player.js';
   import { SaveTracks, SaveSettings, OpenDataFolder } from '../../wailsjs/go/main/App';
 
@@ -38,6 +46,7 @@
     try {
       tracks.set([]);
       currentIndex.set(-1);
+      clearTrackRefs();
       await SaveTracks([]);
     } catch (err) {
       console.error('Не удалось очистить треки:', err);
@@ -74,10 +83,15 @@
   <h2>Настройки</h2>
 
   <div class="tabs">
-    <button class="chip" class:active={tab === 'general'} on:click={() => (tab = 'general')}>Основные</button>
-    <button class="chip" class:active={tab === 'nowplaying'} on:click={() => (tab = 'nowplaying')}>Большой экран</button>
+    <button class="chip" class:active={tab === 'general'} on:click={() => setTab('general')}>Основные</button>
+    <button class="chip" class:active={tab === 'nowplaying'} on:click={() => setTab('nowplaying')}>Большой экран</button>
   </div>
 
+  <div class="tab-stage">
+  {#key tab}
+  <div class="tab-pane"
+    in:fly={{ x: dir * 70, duration: 340, delay: 120, easing: cubicOut, opacity: 0 }}
+    out:fly={{ x: -dir * 70, duration: 180, easing: cubicIn, opacity: 0 }}>
   {#if tab === 'nowplaying'}
   <div class="grid">
     <div class="card">
@@ -290,8 +304,8 @@
       <h3>Плеер</h3>
 
       <RangeField id="default-volume" label="Громкость по умолчанию" min={0} max={100} step={1}
-        value={Math.round(($settings.defaultVolume || 0) * 100)} format={(v) => v + '%'}
-        on:change={(e) => updateSettings({ defaultVolume: e.detail / 100 })} />
+        value={Math.round($volumeStore * 100)} format={(v) => v + '%'}
+        on:change={(e) => playerController.setVolume(e.detail / 100)} />
 
       <div class="switch-row restore-row">
         <span>Восстанавливать последний трек при запуске</span>
@@ -352,11 +366,16 @@
     </div>
   </div>
   {/if}
+  </div>
+  {/key}
+  </div>
 
   <p class="note">Новые функции позже. Идет работа.</p>
 </section>
 
 <style>
+  .tab-stage { display: grid; grid-template-columns: minmax(0, 1fr); overflow-x: clip; }
+  .tab-pane { grid-area: 1 / 1; min-width: 0; }
   .settings-page {
     width: 100%;
     max-width: 1100px;

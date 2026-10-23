@@ -36,3 +36,45 @@ export function updateTrackDuration(id, duration) {
     return updated;
   });
 }
+
+const normPath = (p) => String(p || '').replace(/\\/g, '/').toLowerCase();
+
+/** Добавляет треки, пропуская те, что уже есть в списке (по пути). Возвращает, сколько добавлено. */
+export function addTracksDedup(newTracks) {
+  let added = 0;
+  tracks.update((current) => {
+    const seen = new Set(current.map((t) => normPath(t.path)));
+    const fresh = [];
+    for (const t of newTracks || []) {
+      const key = normPath(t.path);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      fresh.push(t);
+    }
+    added = fresh.length;
+    if (!added) return current;
+    const updated = [...current, ...fresh];
+    persistTracks(updated);
+    return updated;
+  });
+  return added;
+}
+
+/** Перемещает трек из позиции from в позицию to; текущий играющий трек остаётся тем же. */
+export function moveTrack(from, to) {
+  if (from === to) return;
+  let list = [];
+  tracks.update((current) => {
+    list = current.slice();
+    const [item] = list.splice(from, 1);
+    list.splice(to, 0, item);
+    return list;
+  });
+  currentIndex.update((ci) => {
+    if (ci === from) return to;
+    if (from < ci && to >= ci) return ci - 1;
+    if (from > ci && to <= ci) return ci + 1;
+    return ci;
+  });
+  persistTracks(list);
+}

@@ -10,8 +10,16 @@ export function AddLocalFolder(arg1) {
   return window['go']['main']['App']['AddLocalFolder'](arg1);
 }
 
+export function AddPaths(arg1) {
+  return window['go']['main']['App']['AddPaths'](arg1);
+}
+
 export function GetStreamBaseURL() {
   return window['go']['main']['App']['GetStreamBaseURL']();
+}
+
+export function LoadPlaylistsData() {
+  return window['go']['main']['App']['LoadPlaylistsData']();
 }
 
 export function LoadSettings() {
@@ -36,6 +44,10 @@ export function OpenLocalFolderDialog() {
 
 export function ReadFileAsDataURL(arg1) {
   return window['go']['main']['App']['ReadFileAsDataURL'](arg1);
+}
+
+export function SavePlaylistsData(arg1) {
+  return window['go']['main']['App']['SavePlaylistsData'](arg1);
 }
 
 export function SaveSettings(arg1) {

@@ -5,6 +5,8 @@
   import PlayerPage from './components/PlayerPage.svelte';
   import SettingsPage from './components/SettingsPage.svelte';
   import AboutPage from './components/AboutPage.svelte';
+  import PlaylistsPage from './components/PlaylistsPage.svelte';
+  import UpdatesModal from './components/UpdatesModal.svelte';
   import BackgroundFX from './components/BackgroundFX.svelte';
   import NowPlayingPage from './components/NowPlayingPage.svelte';
   import Marquee from './components/Marquee.svelte';
@@ -12,6 +14,12 @@
   import VolumeIcon from './components/VolumeIcon.svelte';
   import { autohideScroll } from './lib/autohide-scroll.js';
   import { fade } from 'svelte/transition';
+  import { loadPlaylists } from './stores/playlists.js';
+  import { APP_VERSION } from './lib/version.js';
+  import { toast, showToast } from './stores/toast.js';
+  import { addTracksDedup } from './stores/player.js';
+  import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime';
+  import { AddPaths } from '../wailsjs/go/main/App';
   import Splash from './components/Splash.svelte';
   import AriaMark from './components/AriaMark.svelte';
   import CoverImage from './components/CoverImage.svelte';
@@ -41,10 +49,24 @@
   // Local state for sliders (synced with controller)
   let currentTime = 0;
   let duration = 0;
-  let volume = 0.5;
+  const volumeStore = playerController.volume;
+  $: volume = $volumeStore;
   let isLoading = false;
   let appearanceReady = false;
   let showSplash = true;      // заставка при запуске: блокирует интерфейс
+  let showUpdates = false;
+  let settingsLoaded = false;
+  let updatesChecked = false;
+  $: hasNewVersion = ($settings.lastSeenVersion || '') !== APP_VERSION;
+  // один раз после заставки: показать «Что нового», если эту версию ещё не просматривали
+  $: if (!showSplash && settingsLoaded && !updatesChecked) {
+    updatesChecked = true;
+    if (hasNewVersion) showUpdates = true;
+  }
+  function closeUpdates() {
+    showUpdates = false;
+    if (hasNewVersion) updateSettings({ lastSeenVersion: APP_VERSION });
+  }
   let bgActive = true;        // фон главного окна на паузе, пока большая страница полностью закрывает его
   let bgTimer;
   let prevLook = null;
@@ -63,7 +85,8 @@
       const loadedSettings = await LoadSettings();
       const merged = { ...defaultSettings, ...(loadedSettings || {}) };
       settings.set(merged);
-      volume = merged.defaultVolume ?? 0.5;
+      settingsLoaded = true;
+      playerController.setVolume(merged.defaultVolume ?? 0.5, false);
       
       applyAppearance(merged);
       appearanceReady = true;
@@ -72,11 +95,12 @@
       // 2. Init Stream Server
       streamBase = await GetStreamBaseURL();
       playerController.init(audioElement, streamBase);
-      playerController.setTargetVolume(volume);
+      playerController.applyCurrentVolume();
 
       // 3. Init Tracks
       const savedTracks = await LoadTracks();
       tracks.set(Array.isArray(savedTracks) ? savedTracks : []);
+      await loadPlaylists();
 
       // Subscribe to controller states to sync UI
       playerController.currentTime.subscribe(v => currentTime = v);
@@ -106,7 +130,7 @@
     clearTimeout(bgTimer);
     if (showSplash) bgActive = false;                       // на заставке фон не анимируем — меньше нагрузки на старте
     else if (showNowPlaying) bgTimer = setTimeout(() => (bgActive = false), 700);
-    else bgActive = true;
+    else bgTimer = setTimeout(() => (bgActive = true), 560); // фон возобновляем только после того, как страница уехала
   }
 
   // Смена темы/дизайна/режима палитры — плавный кроссфейд всего экрана (View Transitions),
@@ -145,10 +169,7 @@
   }
 
   function changeVolume(e) {
-    volume = Number(e.target.value) / 100;
-    // Передаем целевую громкость в контроллер
-    playerController.setTargetVolume(volume);
-    updateSettings({ defaultVolume: volume });
+    playerController.setVolume(Number(e.target.value) / 100);
   }
 
   function seekTo(e) {
@@ -184,6 +205,46 @@
      }
   }
   
+  // --- Перетаскивание файлов и папок из проводника в окно ---
+  let dropActive = false;
+  let dragDepth = 0;
+  const hasFiles = (e) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  const onDragEnter = (e) => { if (hasFiles(e)) { dragDepth++; dropActive = true; } };
+  const onDragLeave = (e) => { if (hasFiles(e)) { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) dropActive = false; } };
+  const onDragOver = (e) => { if (hasFiles(e)) e.preventDefault(); };
+  const onDropEnd = () => { dragDepth = 0; dropActive = false; };
+
+  async function handleDroppedPaths(paths) {
+    if (!Array.isArray(paths) || paths.length === 0) return;
+    try {
+      const found = await AddPaths(paths);
+      const added = addTracksDedup(found || []);
+      if (added > 0) showToast(`Добавлено треков: ${added}`);
+      else if ((found || []).length > 0) showToast('Эти треки уже есть в списке');
+      else showToast('Поддерживаемых аудиофайлов не найдено');
+    } catch (err) {
+      console.error('Ошибка при добавлении перетащенных файлов:', err);
+      showToast('Не удалось добавить файлы');
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('dragenter', onDragEnter);
+    window.addEventListener('dragleave', onDragLeave);
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('drop', onDropEnd);
+    window.addEventListener('dragend', onDropEnd);
+    try { OnFileDrop((x, y, paths) => { onDropEnd(); handleDroppedPaths(paths); }, false); } catch (e) { console.warn('OnFileDrop недоступен:', e); }
+    return () => {
+      window.removeEventListener('dragenter', onDragEnter);
+      window.removeEventListener('dragleave', onDragLeave);
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('drop', onDropEnd);
+      window.removeEventListener('dragend', onDropEnd);
+      try { OnFileDropOff(); } catch (e) {}
+    };
+  });
+
   // Event listener to close Now Playing modal
   onMount(() => {
     const handler = () => showNowPlaying = false;
@@ -200,12 +261,21 @@
 
 <div class="layout" inert={showSplash}>
   <aside class="sidebar">
-    <div class="logo"><AriaMark size={30} glow={false} /><span class="logo-rest">ria</span></div>
+    <div class="logo-block">
+      <div class="logo"><AriaMark size={30} glow={false} /><span class="logo-rest">ria</span></div>
+      <div class="app-version">v{APP_VERSION}</div>
+    </div>
     <nav class="nav">
       <button class:active={page === 'player'} on:click={() => (page = 'player')}>Плеер</button>
+      <button class:active={page === 'playlists'} on:click={() => (page = 'playlists')}>Плейлисты</button>
       <button class:active={page === 'settings'} on:click={() => (page = 'settings')}>Настройки</button>
       <button class:active={page === 'about'} on:click={() => (page = 'about')}>О приложении</button>
     </nav>
+    <div class="sidebar-foot">
+      <button class="updates-btn" on:click={() => (showUpdates = true)} title="Что нового">
+        Обновления{#if hasNewVersion}<span class="dot"></span>{/if}
+      </button>
+    </div>
   </aside>
 
   <main class="content" use:autohideScroll>
@@ -213,6 +283,8 @@
       <div class="page-wrap" in:fade={{ duration: 340, delay: 140 }} out:fade={{ duration: 160 }}>
     {#if page === 'player'}
       <PlayerPage streamBase={streamBase} />
+    {:else if page === 'playlists'}
+      <PlaylistsPage streamBase={streamBase} on:open={() => (page = 'player')} />
     {:else if page === 'settings'}
       <SettingsPage />
     {:else if page === 'about'}
@@ -276,6 +348,24 @@
   </footer>
 </div>
 
+{#if dropActive}
+  <div class="drop-overlay" transition:fade={{ duration: 160 }}>
+    <div class="drop-box">
+      <div class="drop-icon">⬇</div>
+      <div class="drop-title">Отпустите, чтобы добавить</div>
+      <div class="drop-sub">Аудиофайлы или папки с музыкой</div>
+    </div>
+  </div>
+{/if}
+
+{#if $toast}
+  <div class="toast" transition:fade={{ duration: 200 }}>{$toast}</div>
+{/if}
+
+{#if showUpdates}
+  <UpdatesModal on:close={closeUpdates} />
+{/if}
+
 {#if showSplash}
   <Splash on:done={() => (showSplash = false)} />
 {/if}
@@ -303,10 +393,28 @@
   :global(.autohide-scroll::-webkit-scrollbar-track) { background: transparent; }
   :global(.autohide-scroll::-webkit-scrollbar-thumb) { background: transparent; border-radius: 3px; transition: background-color 0.6s ease; }
   :global(.autohide-scroll.scroll-active::-webkit-scrollbar-thumb) { background: rgba(var(--accent-rgb),0.28); transition-duration: 0.15s; }
+  .drop-overlay { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; pointer-events:none;
+    background: color-mix(in srgb, var(--bg) 55%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .drop-box { padding:38px 56px; text-align:center; border-radius:26px; color:var(--text);
+    border:2px dashed rgba(var(--accent-rgb),0.7); background: rgba(var(--accent-rgb),0.10);
+    box-shadow: 0 0 40px rgba(var(--accent-rgb),0.25); }
+  .drop-icon { font-size:40px; color:var(--accent); animation: dropBob 1.1s ease-in-out infinite alternate; }
+  @keyframes dropBob { from { transform: translateY(-4px); } to { transform: translateY(5px); } }
+  .drop-title { font-size:20px; font-weight:700; margin-top:6px; }
+  .drop-sub { font-size:13px; color:var(--muted); margin-top:4px; }
+  .toast { position:fixed; left:50%; bottom:110px; transform:translateX(-50%); z-index:2500; padding:10px 18px; border-radius:999px;
+    background: var(--panel-bg, #1b1b21); border:1px solid rgba(var(--accent-rgb),0.45); color:var(--text); font-size:14px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.35); -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur)); pointer-events:none; }
   .layout { position:relative; z-index:1; width:100vw; height:100vh; display:grid; grid-template-columns:230px 1fr; grid-template-rows:1fr 90px; }
   .sidebar { grid-column:1; grid-row:1/span 2; padding:20px 14px; background:var(--panel-bg); border-right:1px solid var(--border); backdrop-filter:blur(var(--blur)); display:flex; flex-direction:column;}
-  .logo { display:flex; align-items:center; font-size:30px; font-weight:700; line-height:30px; margin-bottom:30px; color:var(--text); letter-spacing:0.5px;}
+  .logo-block { margin-bottom:30px; }
+  .app-version { margin:4px 0 0 2px; font-size:11px; letter-spacing:1px; color:var(--muted); opacity:.8; }
+  .logo { display:flex; align-items:center; font-size:30px; font-weight:700; line-height:30px; color:var(--text); letter-spacing:0.5px;}
   .logo-rest { margin-left:2px; }
+  .sidebar-foot { margin-top:auto; }
+  .updates-btn { width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--muted); font-size:13px; cursor:pointer; transition:0.15s ease; }
+  .updates-btn:hover { color:var(--text); border-color:rgba(var(--accent-rgb),0.4); }
+  .updates-btn .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); }
   .nav { display:flex; flex-direction:column; gap:6px;}
   .nav button { padding:12px; border:none; background:transparent; color:var(--muted); text-align:left; cursor:pointer; border-radius:8px;}
   .nav button.active { background:rgba(var(--accent-rgb),0.1); color:var(--text);}

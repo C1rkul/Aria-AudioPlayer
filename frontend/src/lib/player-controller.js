@@ -1,7 +1,58 @@
 import { writable, get } from 'svelte/store';
 import { tracks as tracksStore, currentIndex as currentIdxStore, isPlaying as playingStore, repeatMode, shuffleEnabled, updateTrackDuration } from '../stores/player.js';
 import { getSourceProvider } from './sources/index.js';
+import { updateSettings } from '../stores/settings.js';
+import { queue as queueStore, setQueue, ALL_ID } from '../stores/playlists.js';
 import { ReadFileAsDataURL } from '../../wailsjs/go/main/App'; // <-- Импорт Go функции
+
+// Сдвиг тона без изменения скорости: две линии задержки с плавным перекрытием (простой «granular» pitch shifter).
+export const PITCH_WORKLET = `
+class AriaPitchShifter extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [{ name: 'ratio', defaultValue: 1, minValue: 0.25, maxValue: 4, automationRate: 'k-rate' }];
+  }
+  constructor() {
+    super();
+    this.W = Math.round(sampleRate * 0.06);
+    this.size = this.W * 4;
+    this.buf = [new Float32Array(this.size), new Float32Array(this.size)];
+    this.w = 0;
+    this.ph = 0;
+  }
+  read(ch, pos) {
+    const size = this.size;
+    let p = pos % size; if (p < 0) p += size;
+    const i0 = Math.floor(p), i1 = (i0 + 1) % size, f = p - i0;
+    const b = this.buf[ch];
+    return b[i0] * (1 - f) + b[i1] * f;
+  }
+  process(inputs, outputs, params) {
+    const inp = inputs[0], out = outputs[0];
+    if (!out || !out.length) return true;
+    const r = params.ratio[0];
+    const n = out[0].length, W = this.W, size = this.size;
+    for (let i = 0; i < n; i++) {
+      for (let c = 0; c < 2; c++) {
+        const src = inp && inp.length ? inp[Math.min(c, inp.length - 1)] : null;
+        this.buf[c][this.w] = src ? src[i] : 0;
+      }
+      this.ph += (1 - r) / W;
+      if (this.ph >= 1) this.ph -= 1;
+      if (this.ph < 0) this.ph += 1;
+      const p1 = this.ph, p2 = (this.ph + 0.5) % 1;
+      const g1 = 0.5 - 0.5 * Math.cos(2 * Math.PI * p1);
+      const g2 = 1 - g1;
+      for (let c = 0; c < out.length; c++) {
+        const k = Math.min(c, 1);
+        out[c][i] = this.read(k, this.w - p1 * W) * g1 + this.read(k, this.w - p2 * W) * g2;
+      }
+      this.w = (this.w + 1) % size;
+    }
+    return true;
+  }
+}
+registerProcessor('aria-pitch-shifter', AriaPitchShifter);
+`;
 
 class PlayerController {
   constructor() {
@@ -17,6 +68,14 @@ class PlayerController {
     this.pendingPosition = 0;
     this.saveTimer = null;
     this.startPaused = false; // следующий загружаемый трек не стартует автоматически
+    this.priority = []; // id треков из «играть следом»: берутся первыми, даже при shuffle
+    this.speed = writable(1); // скорость воспроизведения (на время сеанса)
+    this.pitch = writable(1); // тон (множитель частоты), на время сеанса
+    this.tempoLinked = writable(false); // скорость и тон связаны: меняются вместе, как у пластинки
+    this.srcNode = null;
+    this.shifter = null;      // AudioWorklet со сдвигом тона (создаётся, когда тон != 1 и не связан со скоростью)
+    this.shifterLoading = null;
+    this.volume = writable(0.5); // единственный источник громкости: все ползунки читают и пишут его
   }
 
   init(audioEl, baseUrl) {
@@ -24,6 +83,7 @@ class PlayerController {
     this.streamBaseUrl = baseUrl;
     // нужно для Web Audio (стрим идёт с другого origin, CORS у сервера открыт)
     this.audioElement.crossOrigin = 'anonymous';
+    this.audioElement.preservesPitch = true; // при смене скорости тон не меняется
     
     // Слушатели событий аудио
     this.audioElement.addEventListener('timeupdate', () => this.onTimeUpdate());
@@ -91,8 +151,9 @@ class PlayerController {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       this.audioCtx = new Ctx();
       const srcNode = this.audioCtx.createMediaElementSource(this.audioElement);
+      this.srcNode = srcNode;
       this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 256;
+      this.analyser.fftSize = 512;
       this.analyser.smoothingTimeConstant = 0.8;
       srcNode.connect(this.analyser);
       this.analyser.connect(this.audioCtx.destination);
@@ -113,12 +174,89 @@ class PlayerController {
      }
   }
 
-  setVolume(vol) { this.setTargetVolume(vol); }
-
-  setTargetVolume(vol) {
-      this._targetVolume = vol;
-      this.applyCurrentVolume();
+  /** Меняет громкость везде сразу (нижняя панель, большая страница, настройки). persist — сохранить в настройки. */
+  setVolume(vol, persist = true) {
+    const v = Math.max(0, Math.min(1, Number(vol) || 0));
+    this._targetVolume = v;
+    this.volume.set(v);
+    this.applyCurrentVolume();
+    if (persist) updateSettings({ defaultVolume: v });
   }
+
+  /** Скорость воспроизведения 0.5–2.0. Если скорость и тон связаны — тон меняется вместе с ней. */
+  setSpeed(v) {
+    const n = Math.min(2, Math.max(0.5, Math.round(Number(v) * 20) / 20));
+    if (!Number.isFinite(n)) return;
+    this.speed.set(n);
+    if (get(this.tempoLinked)) this.pitch.set(n);
+    this.applyTempo();
+  }
+
+  /** Тон 0.5–2.0 (множитель частоты). При связанных скорость и тон меняются вместе. */
+  setPitch(v) {
+    const n = Math.min(2, Math.max(0.5, Math.round(Number(v) * 20) / 20));
+    if (!Number.isFinite(n)) return;
+    this.pitch.set(n);
+    if (get(this.tempoLinked)) this.speed.set(n);
+    this.applyTempo();
+  }
+
+  /** Связать/развязать скорость и тон. При связывании тон подтягивается к скорости. */
+  setTempoLinked(on) {
+    this.tempoLinked.set(!!on);
+    if (on) this.pitch.set(get(this.speed));
+    this.applyTempo();
+  }
+
+  applyTempo() {
+    const el = this.audioElement;
+    const s = get(this.speed), p = get(this.pitch);
+    const linked = get(this.tempoLinked) && Math.abs(s - p) < 1e-6;
+    if (el) {
+      // связанные: обычное ускорение/замедление (тон меняется само); иначе тон сохраняется, а сдвигает его шифтер
+      el.preservesPitch = !linked;
+      el.webkitPreservesPitch = !linked;
+      el.defaultPlaybackRate = s;
+      el.playbackRate = s;
+    }
+    const ratio = linked ? 1 : p;
+    if (Math.abs(ratio - 1) > 1e-6) this.ensureShifter().then(() => this.rewire(ratio));
+    else this.rewire(1);
+  }
+
+  /** Подключает сдвиг тона в цепочку Web Audio (или выключает его при ratio == 1). */
+  rewire(ratio) {
+    if (!this.audioCtx || !this.srcNode || !this.analyser) return;
+    try {
+      this.srcNode.disconnect();
+      if (this.shifter) this.shifter.disconnect();
+    } catch (e) {}
+    if (this.shifter && Math.abs(ratio - 1) > 1e-6) {
+      this.shifter.parameters.get('ratio').value = ratio;
+      this.srcNode.connect(this.shifter);
+      this.shifter.connect(this.analyser);
+    } else {
+      this.srcNode.connect(this.analyser);
+    }
+  }
+
+  async ensureShifter() {
+    if (this.shifter) return;
+    if (!this.shifterLoading) {
+      this.shifterLoading = (async () => {
+        this.getAnalyser(); // создаёт контекст и цепочку, если их ещё нет
+        if (!this.audioCtx || !this.audioCtx.audioWorklet) throw new Error('AudioWorklet недоступен');
+        const url = URL.createObjectURL(new Blob([PITCH_WORKLET], { type: 'text/javascript' }));
+        await this.audioCtx.audioWorklet.addModule(url);
+        URL.revokeObjectURL(url);
+        this.shifter = new AudioWorkletNode(this.audioCtx, 'aria-pitch-shifter', { outputChannelCount: [2] });
+      })().catch((e) => { console.warn('Сдвиг тона недоступен:', e); this.shifterLoading = null; });
+    }
+    await this.shifterLoading;
+  }
+
+  // старое имя — оставлено для совместимости
+  setTargetVolume(vol) { this.setVolume(vol, false); }
 
   togglePlay() {
     if (!this.audioElement) return;
@@ -146,24 +284,110 @@ class PlayerController {
     this.startPaused = !!(this.audioElement && this.audioElement.src && this.audioElement.paused);
   }
 
+  // --- Очередь ---
+
+  _libIdx(id) {
+    return get(tracksStore).findIndex((t) => t.id === id);
+  }
+
+  /**
+   * Актуальное состояние очереди: { ids, pos }.
+   * Очередь «all» всегда повторяет библиотеку; чужие очереди чистятся от удалённых треков.
+   * Если играющего трека нет в очереди — очередь пересобирается из библиотеки.
+   */
+  _queueState() {
+    const lib = get(tracksStore);
+    const libIds = lib.map((t) => t.id);
+    const libSet = new Set(libIds);
+    const cur = lib[get(currentIdxStore)]?.id ?? null;
+    const q0 = get(queueStore);
+    let src = q0.sourceId || ALL_ID;
+    let ids;
+    if (src === ALL_ID) ids = libIds;
+    else ids = q0.trackIds.filter((id) => libSet.has(id));
+
+    let pos = -1;
+    if (cur !== null) {
+      pos = ids[q0.index] === cur ? q0.index : ids.indexOf(cur);
+      if (pos === -1) { src = ALL_ID; ids = libIds; pos = ids.indexOf(cur); }
+    }
+    const same = ids.length === q0.trackIds.length && ids.every((id, i) => id === q0.trackIds[i]);
+    if (!same || src !== q0.sourceId || pos !== q0.index) setQueue(src, ids, pos);
+    return { ids, pos };
+  }
+
+  /** Запуск трека из списка: очередью становится этот список. */
+  playFrom(sourceId, ids, trackId) {
+    const pos = ids.indexOf(trackId);
+    const idx = this._libIdx(trackId);
+    if (pos === -1 || idx === -1) return;
+    this.priority = [];
+    setQueue(sourceId, ids, pos);
+    this.startPaused = false; // явный выбор трека пользователем — всегда играем
+    if (get(currentIdxStore) === idx) this.goTo(idx);
+    else currentIdxStore.set(idx);
+  }
+
+  /** «Играть следом»: вставить трек сразу после текущего. */
+  playNext(trackId) {
+    const { ids, pos } = this._queueState();
+    if (this._libIdx(trackId) === -1 || ids[pos] === trackId) return;
+    const list = ids.filter((id) => id !== trackId);
+    const at = list.indexOf(ids[pos]) + 1; // -1 + 1 = 0, если ничего не играет
+    list.splice(at, 0, trackId);
+    const src = get(queueStore).sourceId === ALL_ID ? 'custom' : get(queueStore).sourceId;
+    setQueue(src, list, list.indexOf(ids[pos]));
+    this.priority = [...this.priority.filter((id) => id !== trackId), trackId];
+  }
+
+  /** Переставить трек в очереди (from/to — позиции в очереди). Играющий трек остаётся тем же. */
+  moveInQueue(from, to) {
+    const { ids, pos } = this._queueState();
+    if (from === to || from < 0 || to < 0 || from >= ids.length || to >= ids.length) return;
+    const list = ids.slice();
+    const [item] = list.splice(from, 1);
+    list.splice(to, 0, item);
+    setQueue('custom', list, list.indexOf(ids[pos]));
+  }
+
+  /** Убрать трек из очереди (играющий остаётся). Из библиотеки не удаляется. */
+  removeFromQueue(trackId) {
+    const { ids, pos } = this._queueState();
+    if (ids[pos] === trackId || !ids.includes(trackId)) return;
+    const list = ids.filter((id) => id !== trackId);
+    this.priority = this.priority.filter((id) => id !== trackId);
+    setQueue('custom', list, list.indexOf(ids[pos]));
+  }
+
+  /** Добавить трек в конец очереди. */
+  addToQueue(trackId) {
+    const { ids, pos } = this._queueState();
+    if (this._libIdx(trackId) === -1 || ids.includes(trackId)) return;
+    const src = get(queueStore).sourceId === ALL_ID ? 'custom' : get(queueStore).sourceId;
+    setQueue(src, [...ids, trackId], pos);
+  }
+
+  /** Индекс в библиотеке следующего трека: число, -1 (конец очереди) или null (пусто). */
   pickNext() {
-    const idx = get(currentIdxStore);
-    const total = get(tracksStore).length;
+    const { ids, pos } = this._queueState();
+    const total = ids.length;
     if (total === 0) return null;
 
+    while (this.priority.length) {
+      const id = this.priority.shift();
+      if (ids.includes(id)) return this._libIdx(id);
+    }
     if (get(shuffleEnabled)) {
-      let nextIdx;
-      do {
-        nextIdx = Math.floor(Math.random() * total);
-      } while (nextIdx === idx && total > 1);
-      return nextIdx;
+      let n;
+      do { n = Math.floor(Math.random() * total); } while (n === pos && total > 1);
+      return this._libIdx(ids[n]);
     }
-    let nextIdx = idx + 1;
-    if (nextIdx >= total) {
-      if (get(repeatMode) === 'all') nextIdx = 0;
-      else return -1; // конец списка
+    let n = pos + 1;
+    if (n >= total) {
+      if (get(repeatMode) === 'all') n = 0;
+      else return -1; // конец очереди
     }
-    return nextIdx;
+    return this._libIdx(ids[n]);
   }
 
   goTo(nextIdx) {
@@ -176,6 +400,7 @@ class PlayerController {
       return;
     }
     currentIdxStore.set(nextIdx);
+    this._queueState(); // обновить позицию в очереди
   }
 
   next() {
@@ -193,24 +418,19 @@ class PlayerController {
       this.currentTime.set(0);
       return;
     }
-    const idx = get(currentIdxStore);
-    const total = get(tracksStore).length;
+    const { ids, pos } = this._queueState();
+    const total = ids.length;
     if (total === 0) return;
 
-    let prevIdx;
+    let p;
     if (get(shuffleEnabled)) {
-      do {
-        prevIdx = Math.floor(Math.random() * total);
-      } while (prevIdx === idx && total > 1);
+      do { p = Math.floor(Math.random() * total); } while (p === pos && total > 1);
     } else {
-      prevIdx = idx - 1;
-      if (prevIdx < 0) {
-        if (get(repeatMode) === 'all') prevIdx = total - 1;
-        else prevIdx = 0;
-      }
+      p = pos - 1;
+      if (p < 0) p = get(repeatMode) === 'all' ? total - 1 : 0;
     }
     this.rememberPause();
-    this.goTo(prevIdx);
+    this.goTo(this._libIdx(ids[p]));
   }
 
   stop() {

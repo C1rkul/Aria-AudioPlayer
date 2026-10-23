@@ -34,6 +34,27 @@ type Track struct {
 	Duration  float64 `json:"duration"`
 }
 
+// Playlist — пользовательский плейлист; хранит только id треков библиотеки.
+type Playlist struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	TrackIDs  []string `json:"trackIds"`
+	CreatedAt int64    `json:"createdAt"`
+}
+
+// QueueState — очередь воспроизведения (сохраняется между запусками).
+// SourceID: "all" (вся библиотека) или id плейлиста, из которого собрана очередь.
+type QueueState struct {
+	SourceID string   `json:"sourceId"`
+	TrackIDs []string `json:"trackIds"`
+	Index    int      `json:"index"`
+}
+
+type PlaylistsData struct {
+	Playlists []Playlist `json:"playlists"`
+	Queue     QueueState `json:"queue"`
+}
+
 type Settings struct {
 	Theme              string  `json:"theme"`
 	Design             string  `json:"design"`
@@ -46,6 +67,10 @@ type Settings struct {
 	MatrixSpeed        float64 `json:"matrixSpeed"`
 	MatrixDensity      int     `json:"matrixDensity"`
 	AuroraCount        int     `json:"auroraCount"`
+	VizPreset          string  `json:"vizPreset"`
+	VizBars            int     `json:"vizBars"`
+	VizSpin            bool    `json:"vizSpin"`
+	LastSeenVersion    string  `json:"lastSeenVersion"`
 	LyricsAPIURL       string  `json:"lyricsApiUrl"`
 	CustomAccent       string  `json:"customAccent"`
 	DefaultVolume      float64 `json:"defaultVolume"`
@@ -118,6 +143,8 @@ func defaultSettings() Settings {
 		MatrixSpeed:      1.0,
 		MatrixDensity:    100,
 		AuroraCount:      5,
+		VizPreset:        "base",
+		VizBars:          48,
 		CustomAccent:     "#7c5cff",
 		DefaultVolume:    0.5,
 		RestoreLastTrack: false,
@@ -171,6 +198,11 @@ func normalizeSettings(s *Settings) {
 	s.BabbleCount = clampInt(s.BabbleCount, 5, 60, 22)
 	s.MatrixDensity = clampInt(s.MatrixDensity, 10, 100, 100)
 	s.AuroraCount = clampInt(s.AuroraCount, 1, 12, 5)
+	s.VizBars = clampInt(s.VizBars, 8, 128, 48)
+	validViz := map[string]bool{"base": true, "circle": true, "big": true}
+	if !validViz[s.VizPreset] {
+		s.VizPreset = "base"
+	}
 	if s.MatrixSpeed < 0.3 || s.MatrixSpeed > 3 {
 		s.MatrixSpeed = 1.0
 	}
@@ -314,6 +346,78 @@ func (a *App) SaveTracks(tracks []Track) error {
 	}
 	fmt.Printf("💾 Сохранено треков: %d в файл %s\n", len(tracks), path)
 	return nil
+}
+
+func (a *App) playlistsFilePath() (string, error) {
+	tp, err := a.tracksFilePath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(tp), "playlists.json"), nil
+}
+
+func emptyPlaylistsData() PlaylistsData {
+	return PlaylistsData{
+		Playlists: []Playlist{},
+		Queue:     QueueState{SourceID: "all", TrackIDs: []string{}, Index: -1},
+	}
+}
+
+// LoadPlaylistsData читает playlists.json (плейлисты + очередь). Нет файла — пустые данные.
+func (a *App) LoadPlaylistsData() (PlaylistsData, error) {
+	path, err := a.playlistsFilePath()
+	if err != nil {
+		return emptyPlaylistsData(), err
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return emptyPlaylistsData(), nil
+		}
+		return emptyPlaylistsData(), err
+	}
+	pd := emptyPlaylistsData()
+	if err := json.Unmarshal(data, &pd); err != nil {
+		return emptyPlaylistsData(), err
+	}
+	if pd.Playlists == nil {
+		pd.Playlists = []Playlist{}
+	}
+	for i := range pd.Playlists {
+		if pd.Playlists[i].TrackIDs == nil {
+			pd.Playlists[i].TrackIDs = []string{}
+		}
+	}
+	if pd.Queue.TrackIDs == nil {
+		pd.Queue.TrackIDs = []string{}
+	}
+	if pd.Queue.SourceID == "" {
+		pd.Queue.SourceID = "all"
+	}
+	return pd, nil
+}
+
+// SavePlaylistsData сохраняет плейлисты и очередь (запись через временный файл).
+func (a *App) SavePlaylistsData(pd PlaylistsData) error {
+	path, err := a.playlistsFilePath()
+	if err != nil {
+		return err
+	}
+	if pd.Playlists == nil {
+		pd.Playlists = []Playlist{}
+	}
+	if pd.Queue.TrackIDs == nil {
+		pd.Queue.TrackIDs = []string{}
+	}
+	data, err := json.MarshalIndent(pd, "", "  ")
+	if err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 // --- NEW FEATURE: Add Folder ---
@@ -482,6 +586,33 @@ func (a *App) AddLocalFiles() ([]Track, error) {
 		})
 	}
 	fmt.Printf("🏷️ Добавлено треков с метаданными: %d\n", len(tracks))
+	return tracks, nil
+}
+
+// AddPaths принимает пути, перетащенные в окно: папки сканируются рекурсивно,
+// отдельные файлы добавляются, если у них поддерживаемое расширение.
+func (a *App) AddPaths(paths []string) ([]Track, error) {
+	tracks := []Track{}
+	for _, p := range paths {
+		info, err := os.Stat(p)
+		if err != nil {
+			continue
+		}
+		if info.IsDir() {
+			tracks = append(tracks, a.scanDirectoryForTracks(p)...)
+			continue
+		}
+		if !allowedAudioExtensions[strings.ToLower(filepath.Ext(p))] {
+			continue
+		}
+		id := generateID()
+		title, artist, album, coverPath := a.extractMetadataSafe(p, id)
+		if strings.TrimSpace(title) == "" {
+			title = filepath.Base(p)
+		}
+		tracks = append(tracks, Track{ID: id, Title: title, Artist: artist, Album: album,
+			Path: p, Source: "local", CoverPath: coverPath})
+	}
 	return tracks, nil
 }
 

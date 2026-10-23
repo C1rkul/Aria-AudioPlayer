@@ -6,6 +6,12 @@
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
+  "info": {
+    "companyName": "C1RKUL",
+    "productName": "Aria",
+    "productVersion": "0.3.0",
+    "copyright": "C1RKUL"
+  },
   "author": {
     "name": "",
     "email": ""

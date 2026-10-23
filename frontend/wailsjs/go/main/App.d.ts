@@ -6,7 +6,11 @@ export function AddLocalFiles():Promise<Array<main.Track>>;
 
 export function AddLocalFolder(arg1:string):Promise<Array<main.Track>>;
 
+export function AddPaths(arg1:Array<string>):Promise<Array<main.Track>>;
+
 export function GetStreamBaseURL():Promise<string>;
+
+export function LoadPlaylistsData():Promise<main.PlaylistsData>;
 
 export function LoadSettings():Promise<main.Settings>;
 
@@ -19,6 +23,8 @@ export function OpenLocalFiles():Promise<Array<string>>;
 export function OpenLocalFolderDialog():Promise<string>;
 
 export function ReadFileAsDataURL(arg1:string):Promise<string>;
+
+export function SavePlaylistsData(arg1:main.PlaylistsData):Promise<void>;
 
 export function SaveSettings(arg1:main.Settings):Promise<main.Settings>;
 

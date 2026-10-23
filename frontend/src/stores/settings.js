@@ -13,6 +13,10 @@ export const defaultSettings = {
   matrixSpeed: 1,
   matrixDensity: 100,
   auroraCount: 5,
+  vizPreset: 'base', // 'base' | 'circle' | 'big'
+  vizBars: 48,
+  vizSpin: false,
+  lastSeenVersion: '', // версия, чьё окно «Что нового» уже показано
   lyricsApiUrl: '',
   customAccent: '#7c5cff',
   defaultVolume: 0.5,
