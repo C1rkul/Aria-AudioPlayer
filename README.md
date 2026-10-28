@@ -8,6 +8,8 @@
 
 `v0.3.2-beta`
 
+[![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/C1rkul/badge.svg)](https://hub.xerj.org/contributors/C1rkul)
+
 </div>
 
 
