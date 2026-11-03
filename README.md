@@ -126,7 +126,7 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Документация для разработчика
 
-См. [frontend/docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — какие файлы за что отвечают.
+См. [/frontend/docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — какие файлы за что отвечают.
 
 ## Планы
 
