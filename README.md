@@ -75,7 +75,7 @@
 ## Установка
 
 ### Готовая сборка
-Скачайте `audioplayer.exe` из раздела [Releases](../../releases) и запустите. Установка не требуется. Для работы нужен Microsoft WebView2 (есть в Windows 10/11 из коробки или ставится вместе с Edge).
+Скачайте `Aria-AudioPlayer.exe` из раздела [Releases](../../releases) и запустите. Установка не требуется. Для работы нужен Microsoft WebView2 (есть в Windows 10/11 из коробки или ставится вместе с Edge).
 
 ### Сборка из исходников
 Понадобятся:
@@ -89,7 +89,7 @@ cd Aria-AudioPlayer
 cd frontend && npm install && cd ..
 
 wails dev      # режим разработки с горячей перезагрузкой
-wails build    # готовая сборка: build/bin/audioplayer.exe
+wails build    # готовая сборка: build/bin/Aria-AudioPlayer.exe
 ```
 
 Проверьте установку командой `wails doctor`.
@@ -126,7 +126,7 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Документация для разработчика
 
-См. [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — какие файлы за что отвечают.
+См. [frontend/docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — какие файлы за что отвечают.
 
 ## Планы
 
@@ -201,7 +201,7 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 ## Installation
 
 ### Prebuilt binary
-Download `audioplayer.exe` from [Releases](../../releases) and run it. No installation is needed. Microsoft WebView2 is required (included with Windows 10/11 or installed together with Edge).
+Download `Aria-AudioPlayer.exe` from [Releases](../../releases) and run it. No installation is needed. Microsoft WebView2 is required (included with Windows 10/11 or installed together with Edge).
 
 ### Build from source
 Requirements:
@@ -215,7 +215,7 @@ cd Aria-AudioPlayer
 cd frontend && npm install && cd ..
 
 wails dev      # development mode with hot reload
-wails build    # production build: build/bin/audioplayer.exe
+wails build    # production build: build/bin/Aria-AudioPlayer.exe
 ```
 
 Check your setup with `wails doctor`.
@@ -252,7 +252,7 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Developer docs
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — which file does what.
+See [frontend/docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — which file does what.
 
 ## Roadmap
 
