@@ -1,7 +1,8 @@
+import { tr } from '../i18n.js';
 // ЗАГОТОВКА для будущего внешнего API (Spotify, Radio, etc.)
 export const ExternalSource = {
   id: 'external',
-  name: 'Внешние источники',
+  name: tr('Внешние источники'),
   
   canHandle(track) {
     return track.source === 'external' || track.url !== undefined;

@@ -57,6 +57,9 @@ type PlaylistsData struct {
 
 type Settings struct {
 	Theme              string  `json:"theme"`
+	Language           string  `json:"language"`  // интерфейс: ru | en
+	Style              string  `json:"style"`     // стиль: normal | halloween | ny
+	StyleAuto          bool    `json:"styleAuto"` // автосмена стиля по праздникам
 	Design             string  `json:"design"`
 	Background         string  `json:"background"`
 	Palette            string  `json:"palette"`
@@ -136,6 +139,9 @@ func defaultSettings() Settings {
 	dir, _ := defaultAppDir()
 	return Settings{
 		Theme:             "dark",
+		Language:          "ru",
+		Style:             "halloween",
+		StyleAuto:         false,
 		Design:            "normal",
 		Background:        "none",
 		Palette:           "base",
@@ -192,6 +198,12 @@ func normalizeSettings(s *Settings) {
 	}
 	if strings.TrimSpace(s.CustomAccent) == "" {
 		s.CustomAccent = "#7c5cff"
+	}
+	if s.Language != "ru" && s.Language != "en" {
+		s.Language = "ru"
+	}
+	if s.Style != "normal" && s.Style != "halloween" && s.Style != "ny" {
+		s.Style = "halloween"
 	}
 	if s.DefaultVolume < 0 || s.DefaultVolume > 1 {
 		s.DefaultVolume = 0.5
@@ -720,6 +732,15 @@ func (a *App) GetStreamBaseURL() (string, error) {
 		return "", fmt.Errorf("стрим-сервер не запущен")
 	}
 	return base, nil
+}
+
+// GetSystemInfo — данные для блока «О системе» на странице «О приложении».
+func (a *App) GetSystemInfo() map[string]string {
+	return map[string]string{
+		"platform":    goRuntime.GOOS,
+		"arch":        goRuntime.GOARCH,
+		"audioDevice": audioDeviceName(),
+	}
 }
 
 func (a *App) validateStreamPath(rawPath string) (string, error) {

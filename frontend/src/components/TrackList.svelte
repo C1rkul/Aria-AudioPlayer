@@ -1,4 +1,5 @@
 <script>
+  import { tt, tr } from '../lib/i18n.js';
   // Компактный список треков: клик — играть, перетаскивание — смена порядка, ✕ — убрать.
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { autohideScroll } from '../lib/autohide-scroll.js';
@@ -9,7 +10,7 @@
   export let streamBase = '';
   export let reorderable = false;
   export let removable = false;
-  export let emptyText = 'Пусто';
+  export let emptyText = tr('Пусто');
 
   const dispatch = createEventDispatcher();
 
@@ -104,7 +105,7 @@
                 <span class="cv">{#if t.coverPath && streamBase}<img src={coverUrl(t.coverPath)} alt="" draggable="false" />{:else}<NoteIcon />{/if}</span>
         <span class="tx"><span class="ti">{t.title}</span><span class="ar">{t.artist || ''}</span></span>
         <span class="du">{fmt(t.duration)}</span>
-        {#if removable}<button class="rm" title="Убрать" on:click|stopPropagation={() => dispatch('remove', t.id)}>✕</button>{/if}
+        {#if removable}<button class="rm" title="{tt('Убрать')}" on:click|stopPropagation={() => dispatch('remove', t.id)}>✕</button>{/if}
       </div>
     {/each}
   </div>

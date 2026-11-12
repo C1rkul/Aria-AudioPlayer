@@ -1,4 +1,5 @@
 <script>
+  import { tt, tr } from '../lib/i18n.js';
   import { currentTrack, isPlaying, repeatMode, shuffleEnabled, tracks } from '../stores/player.js';
   import { playlists, queue, ALL_ID, moveInPlaylist, removeFromPlaylist } from '../stores/playlists.js';
   import TrackList from './TrackList.svelte';
@@ -40,7 +41,7 @@
   // --- текст трека (заготовка под внешний API) ---
   // --- правая панель: Текст / Очередь / Плейлист ---
   const PANELS = ['lyrics', 'queue', 'playlist', 'tune'];
-  const PANEL_NAMES = { lyrics: 'Текст', queue: 'Очередь', playlist: 'Плейлист', tune: 'Настройки' };
+  const PANEL_NAMES = { lyrics: tr('Текст'), queue: tr('Очередь'), playlist: tr('Плейлист'), tune: tr('Настройки') };
   const speedStore = playerController.speed;
   const pitchStore = playerController.pitch;
   const linkedStore = playerController.tempoLinked;
@@ -50,7 +51,7 @@
   $: linked = $linkedStore;
 
   // --- визуализатор: пресеты ---
-  const VIZ_PRESETS = [['base', 'Обычный'], ['circle', 'Круглый'], ['big', 'Большой']];
+  const VIZ_PRESETS = [['base', tr('Обычный')], ['circle', tr('Круглый')], ['big', tr('Большой')]];
   $: vizPreset = $settings.vizPreset || 'base';
   $: vizBars = Math.min(128, Math.max(8, $settings.vizBars || 48));
   $: vizSpin = !!$settings.vizSpin;
@@ -70,9 +71,9 @@
 
   $: queueIds = $queue.sourceId === ALL_ID ? $tracks.map((t) => t.id) : $queue.trackIds.filter((id) => byId.has(id));
   $: queueItems = queueIds.map((id) => byId.get(id));
-  $: queueSource = $queue.sourceId === ALL_ID ? 'Все песни'
+  $: queueSource = $queue.sourceId === ALL_ID ? tr('Все песни')
     : $playlists.find((p) => p.id === $queue.sourceId)?.name
-      ?? ($queue.sourceId === 'search' ? 'Результаты поиска' : 'Своя очередь');
+      ?? ($queue.sourceId === 'search' ? tr('Результаты поиска') : tr('Своя очередь'));
   function queuePlay(e) {
     const id = e.detail;
     if (id === activeId) playerController.togglePlay();
@@ -101,10 +102,10 @@
     if (token === lyricsToken) lyrics = res;
   }
   const LYRICS_HINTS = {
-    disabled: 'Текст трека появится здесь, когда будет подключён API для поиска текстов.',
-    'no-api': 'Укажите ссылку на API в настройках, чтобы искать текст.',
-    none: 'Текст для этого трека не найден.',
-    error: 'Не удалось загрузить текст.'
+    disabled: tr('Текст трека появится здесь, когда будет подключён API для поиска текстов.'),
+    'no-api': tr('Укажите ссылку на API в настройках, чтобы искать текст.'),
+    none: tr('Текст для этого трека не найден.'),
+    error: tr('Не удалось загрузить текст.')
   };
 
   let raf;
@@ -245,7 +246,7 @@
     album = $currentTrack.album || 'Unknown Album';
   } else {
     coverUrl = '';
-    title = 'Нет активного трека';
+    title = tr('Нет активного трека');
     artist = '';
     album = '';
   }
@@ -281,7 +282,7 @@
   style={adaptive ? `background-color:${adaptiveColor}` : ''}
   role="dialog"
   aria-modal="true"
-  aria-label="Режим Now Playing"
+  aria-label="{tt('Режим Now Playing')}"
   tabindex="-1"
 >
   {#if !adaptive}
@@ -315,7 +316,7 @@
         <span class="np-time">{fmt($currentTime)}</span>
         <input
           type="range" min="0" max="100" step="0.1"
-          aria-label="Перемотка"
+          aria-label="{tt('Перемотка')}"
           value={progress}
           style="--fill-percent:{progress}%"
           on:input={onSeek}
@@ -325,21 +326,21 @@
 
       <div class="np-controls">
         <button class="mode" class:on={$shuffleEnabled} on:click={() => shuffleEnabled.update((v) => !v)}
-                title={$shuffleEnabled ? 'Перемешивание включено' : 'Перемешивание выключено'}>
+                title={$shuffleEnabled ? tt('Перемешивание включено') : tt('Перемешивание выключено')}>
           <ShuffleIcon />
         </button>
-        <button on:click={() => playerController.prev()} title="Предыдущий"><SkipIcon back /></button>
+        <button on:click={() => playerController.prev()} title="{tt('Предыдущий')}"><SkipIcon back /></button>
         <button
           class="main-play"
           on:click={() => playerController.togglePlay()}
-          title={$isPlaying ? 'Пауза' : 'Играть'}
+          title={$isPlaying ? tt('Пауза') : tt('Играть')}
         >
           <PlayPauseIcon playing={$isPlaying} />
         </button>
-        <button on:click={() => playerController.next()} title="Следующий"><SkipIcon /></button>
+        <button on:click={() => playerController.next()} title="{tt('Следующий')}"><SkipIcon /></button>
         <button class="mode" class:on={$repeatMode !== 'off'}
                 on:click={() => repeatMode.update((v) => (v === 'off' ? 'all' : v === 'all' ? 'one' : 'off'))}
-                title={$repeatMode === 'one' ? 'Повтор: один трек' : $repeatMode === 'all' ? 'Повтор: весь список' : 'Повтор выключен'}>
+                title={$repeatMode === 'one' ? tt('Повтор: один трек') : $repeatMode === 'all' ? tt('Повтор: весь список') : tt('Повтор выключен')}>
           <RepeatIcon mode={$repeatMode} />
         </button>
       </div>
@@ -348,7 +349,7 @@
         <span class="np-vol-icon"><VolumeIcon {volume} /></span>
         <input
           type="range" min="0" max="100"
-          aria-label="Громкость"
+          aria-label="{tt('Громкость')}"
           value={Math.round(volume * 100)}
           style="--fill-percent:{volume * 100}%"
           on:input={onVolume}
@@ -377,10 +378,10 @@
                 {/if}
               </div>
             {:else if panel === 'queue'}
-              <div class="pane-sub">Источник: {queueSource} · {queueItems.length}</div>
+              <div class="pane-sub">{tt('Источник:')} {queueSource} · {queueItems.length}</div>
               <div class="pane-list">
                 <TrackList items={queueItems} {activeId} streamBase={streamBaseUrl} reorderable removable
-                  emptyText="Очередь пуста. Запустите трек из списка."
+                  emptyText="{tt('Очередь пуста. Запустите трек из списка.')}"
                   on:play={queuePlay}
                   on:move={(e) => playerController.moveInQueue(e.detail.from, e.detail.to)}
                   on:remove={(e) => playerController.removeFromQueue(e.detail)} />
@@ -389,52 +390,52 @@
               <div class="tune">
                 <div class="tune-card">
                   <div class="tune-head">
-                    <h3>Скорость и тон</h3>
+                    <h3>{tt('Скорость и тон')}</h3>
                     <button class="link-btn" class:on={linked} on:click={() => playerController.setTempoLinked(!linked)}
-                      title={linked ? 'Связаны: меняются вместе. Нажмите, чтобы разделить' : 'Раздельно. Нажмите, чтобы связать'}>
-                      {linked ? '🔗 Связаны' : '⛓ Раздельно'}
+                      title={linked ? tt('Связаны: меняются вместе. Нажмите, чтобы разделить') : tt('Раздельно. Нажмите, чтобы связать')}>
+                      {linked ? tt('🔗 Связаны') : tt('⛓ Раздельно')}
                     </button>
                   </div>
-                  <div class="tune-row"><span>Скорость</span><span class="tune-val">{fmtX(speed)}</span></div>
+                  <div class="tune-row"><span>{tt('Скорость')}</span><span class="tune-val">{fmtX(speed)}</span></div>
                   <div class="chips">
                     {#each TEMPO_PRESETS as v}
                       <button class:active={Math.abs(speed - v) < 0.001} on:click={() => playerController.setSpeed(v)}>{fmtX(v)}</button>
                     {/each}
                   </div>
-                  <div class="tune-row"><span>Тон</span><span class="tune-val">{fmtX(pitch)}</span></div>
+                  <div class="tune-row"><span>{tt('Тон')}</span><span class="tune-val">{fmtX(pitch)}</span></div>
                   <div class="chips">
                     {#each TEMPO_PRESETS as v}
                       <button class:active={Math.abs(pitch - v) < 0.001} on:click={() => playerController.setPitch(v)}>{fmtX(v)}</button>
                     {/each}
                   </div>
                   <p class="tune-note">
-                    {linked ? 'Связаны: меняются вместе, как у пластинки — тон растёт и падает вместе со скоростью.' : 'Раздельно: скорость меняется без изменения тона, а тон — без изменения скорости.'}
-                    Сбрасывается при перезапуске.
+                    {linked ? tt('Связаны: меняются вместе, как у пластинки — тон растёт и падает вместе со скоростью.') : tt('Раздельно: скорость меняется без изменения тона, а тон — без изменения скорости.')}
+                    {tt('Сбрасывается при перезапуске.')}
                   </p>
                 </div>
 
                 <div class="tune-card">
-                  <div class="tune-head"><h3>Визуализатор</h3><span class="tune-val">{vizBars}</span></div>
+                  <div class="tune-head"><h3>{tt('Визуализатор')}</h3><span class="tune-val">{vizBars}</span></div>
                   <div class="chips no-top">
                     {#each VIZ_PRESETS as [id, name]}
                       <button class:active={vizPreset === id} on:click={() => updateSettings({ vizPreset: id })}>{name}</button>
                     {/each}
                   </div>
-                  <div class="tune-row"><span>Количество колонок</span></div>
-                  <input type="range" min="8" max="128" step="1" aria-label="Количество колонок"
+                  <div class="tune-row"><span>{tt('Количество колонок')}</span></div>
+                  <input type="range" min="8" max="128" step="1" aria-label="{tt('Количество колонок')}"
                     value={vizBars} style="--fill-percent:{((vizBars - 8) / 120) * 100}%"
                     on:input={(e) => updateSettings({ vizBars: Number(e.currentTarget.value) })} />
                   {#if vizPreset === 'circle'}
                     <div transition:slide={{ duration: 220 }}>
                       <button class="spin-btn" class:on={vizSpin} on:click={() => updateSettings({ vizSpin: !vizSpin })}>
-                        ↻ Вращение по часовой: {vizSpin ? 'вкл' : 'выкл'}
+                        {tt('↻ Вращение по часовой:')} {vizSpin ? tt('вкл') : tt('выкл')}
                       </button>
                     </div>
                   {/if}
                 </div>
 
                 <div class="tune-card soon">
-                  <div class="tune-head"><h3>Эквалайзер</h3><span class="badge">в разработке</span></div>
+                  <div class="tune-head"><h3>{tt('Эквалайзер')}</h3><span class="badge">{tt('в разработке')}</span></div>
                   <div class="eq">
                     {#each EQ_BANDS as f}
                       <div class="eq-band"><div class="eq-bar"><span></span></div><small>{f}</small></div>
@@ -445,7 +446,7 @@
               </div>
             {:else}
               {#if $playlists.length === 0}
-                <p class="lyrics-empty">Плейлистов пока нет. Создайте плейлист на вкладке «Плеер» или на странице «Плейлисты».</p>
+                <p class="lyrics-empty">{tt('Плейлистов пока нет. Создайте плейлист на вкладке «Плеер» или на странице «Плейлисты».')}</p>
               {:else}
                 <div class="pl-chips">
                   {#each $playlists as pl (pl.id)}
@@ -454,7 +455,7 @@
                 </div>
                 <div class="pane-list">
                   <TrackList items={plItems} {activeId} streamBase={streamBaseUrl} reorderable removable
-                    emptyText="В плейлисте пока нет треков."
+                    emptyText="{tt('В плейлисте пока нет треков.')}"
                     on:play={plPlay}
                     on:move={(e) => moveInPlaylist(plId, e.detail.from, e.detail.to)}
                     on:remove={(e) => removeFromPlaylist(plId, e.detail)} />
@@ -466,7 +467,7 @@
       </div>
     </aside>
 
-    <button class="close-btn" on:click={handleBackgroundClick} title="Закрыть">✕</button>
+    <button class="close-btn" on:click={handleBackgroundClick} title="{tt('Закрыть')}">✕</button>
   </div>
 </div>
 

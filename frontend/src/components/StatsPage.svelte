@@ -1,4 +1,6 @@
 <script>
+  import { fmt, tr, tt, locale } from '../lib/i18n.js';
+  import { get } from 'svelte/store';
   import { onDestroy } from 'svelte';
   import { stats, resetStats } from '../stores/stats.js';
   import { tracks } from '../stores/player.js';
@@ -33,7 +35,7 @@
   $: topPlaylists = Object.entries($stats.playlists)
     .map(([id, s]) => {
       const p = plById.get(id);
-      return { id, sec: s.sec, plays: s.plays, name: p?.name || s.name || 'Плейлист', removed: !p, count: p ? p.trackIds.length : null };
+      return { id, sec: s.sec, plays: s.plays, name: p?.name || s.name || tr('Плейлист'), removed: !p, count: p ? p.trackIds.length : null };
     })
     .filter((r) => r.sec >= 1 || r.plays > 0)
     .sort((a, b) => cmp(a, b, sortBy))
@@ -52,12 +54,14 @@
     const h = Math.floor((sec % 86400) / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
-    if (d) return `${d} д ${h} ч ${m} мин`;
-    if (h) return `${h} ч ${m} мин`;
-    if (m) return `${m} мин ${s} с`;
-    return `${s} с`;
+    if (d) return fmt(tt('{0} д {1} ч {2} мин'), d, h, m);
+    if (h) return fmt(tt('{0} ч {1} мин'), h, m);
+    if (m) return fmt(tt('{0} мин {1} с'), m, s);
+    return fmt(tt('{0} с'), s);
   }
   function plural(n, one, few, many) {
+    // EN: 1 — единственное, всё остальное — мн. число (форма few)
+    if (get(locale) === 'en') return n === 1 ? one : few;
     const a = Math.abs(n) % 100, b = a % 10;
     if (a > 10 && a < 20) return many;
     if (b > 1 && b < 5) return few;
@@ -87,30 +91,30 @@
 </script>
 
 <section class="page">
-  <h2>Статистика</h2>
+  <h2>{tt('Статистика')}</h2>
 
   <div class="cards">
-    <div class="card"><div class="val">{fmtDur($stats.totalSec)}</div><div class="lbl">Всего прослушано</div></div>
-    <div class="card"><div class="val">{fmtDur($stats.sessionSec)}</div><div class="lbl">С последнего запуска</div></div>
-    <div class="card"><div class="val">{$stats.launches}</div><div class="lbl">{plural($stats.launches, 'запуск', 'запуска', 'запусков')} приложения</div></div>
-    <div class="card"><div class="val">{lib.length}</div><div class="lbl">{plural(lib.length, 'трек', 'трека', 'треков')} в библиотеке</div></div>
-    <div class="card"><div class="val">{fmtDur(libSeconds)}</div><div class="lbl">Общая длительность музыки</div></div>
-    <div class="card"><div class="val">{$stats.plays}</div><div class="lbl">{plural($stats.plays, 'прослушивание', 'прослушивания', 'прослушиваний')} треков</div></div>
+    <div class="card"><div class="val">{fmtDur($stats.totalSec)}</div><div class="lbl">{tt('Всего прослушано')}</div></div>
+    <div class="card"><div class="val">{fmtDur($stats.sessionSec)}</div><div class="lbl">{tt('С последнего запуска')}</div></div>
+    <div class="card"><div class="val">{$stats.launches}</div><div class="lbl">{plural($stats.launches, tt('запуск'), tt('запуска'), tt('запусков'))} {tt('приложения')}</div></div>
+    <div class="card"><div class="val">{lib.length}</div><div class="lbl">{plural(lib.length, tt('трек'), tt('трека'), tt('треков'))} {tt('в библиотеке')}</div></div>
+    <div class="card"><div class="val">{fmtDur(libSeconds)}</div><div class="lbl">{tt('Общая длительность музыки')}</div></div>
+    <div class="card"><div class="val">{$stats.plays}</div><div class="lbl">{plural($stats.plays, tt('прослушивание'), tt('прослушивания'), tt('прослушиваний'))} {tt('треков')}</div></div>
   </div>
 
   <div class="toolbar">
     <div class="seg" role="tablist">
-      <button class:active={sortBy === 'sec'} on:click={() => (sortBy = 'sec')}>По времени</button>
-      <button class:active={sortBy === 'plays'} on:click={() => (sortBy = 'plays')}>По числу прослушиваний</button>
+      <button class:active={sortBy === 'sec'} on:click={() => (sortBy = 'sec')}>{tt('По времени')}</button>
+      <button class:active={sortBy === 'plays'} on:click={() => (sortBy = 'plays')}>{tt('По числу прослушиваний')}</button>
     </div>
-    <span class="since">Статистика ведётся с {fmtDate($stats.firstLaunch)}</span>
+    <span class="since">{tt('Статистика ведётся с')} {fmtDate($stats.firstLaunch)}</span>
   </div>
 
   <div class="lists">
     <div class="block">
-      <h3>Топ-10 треков</h3>
+      <h3>{tt('Топ-10 треков')}</h3>
       {#if topTracks.length === 0}
-        <p class="empty">Пока пусто — включите что-нибудь, и здесь появится рейтинг.</p>
+        <p class="empty">{tt('Пока пусто — включите что-нибудь, и здесь появится рейтинг.')}</p>
       {:else}
         <ol>
           {#each topTracks as r, i (r.id)}
@@ -118,13 +122,13 @@
               <span class="rank">{i + 1}</span>
               <div class="cov"><CoverImage src={coverUrl(r.coverPath)} placeholder="🎵" duration={0} /></div>
               <div class="meta">
-                <div class="name">{r.title}{#if r.removed}<span class="tag">удалён</span>{/if}</div>
-                <div class="sub">{r.artist || 'Неизвестный исполнитель'}</div>
+                <div class="name">{r.title}{#if r.removed}<span class="tag">{tt('удалён')}</span>{/if}</div>
+                <div class="sub">{r.artist || tt('Неизвестный исполнитель')}</div>
                 <div class="bar"><i style="width:{((sortBy === 'sec' ? r.sec : r.plays) / maxTrack) * 100}%"></i></div>
               </div>
               <div class="nums">
-                <div class="n1">{sortBy === 'sec' ? fmtDur(r.sec) : `${r.plays} ${plural(r.plays, 'раз', 'раза', 'раз')}`}</div>
-                <div class="n2">{sortBy === 'sec' ? `${r.plays} ${plural(r.plays, 'раз', 'раза', 'раз')}` : fmtDur(r.sec)}</div>
+                <div class="n1">{sortBy === 'sec' ? fmtDur(r.sec) : `${r.plays} ${plural(r.plays, tt('раз'), tt('раза'), tt('раз'))}`}</div>
+                <div class="n2">{sortBy === 'sec' ? `${r.plays} ${plural(r.plays, tt('раз'), tt('раза'), tt('раз'))}` : fmtDur(r.sec)}</div>
               </div>
             </li>
           {/each}
@@ -133,9 +137,9 @@
     </div>
 
     <div class="block">
-      <h3>Топ-10 плейлистов</h3>
+      <h3>{tt('Топ-10 плейлистов')}</h3>
       {#if topPlaylists.length === 0}
-        <p class="empty">Плейлисты считаются, когда трек запущен из плейлиста.</p>
+        <p class="empty">{tt('Плейлисты считаются, когда трек запущен из плейлиста.')}</p>
       {:else}
         <ol>
           {#each topPlaylists as r, i (r.id)}
@@ -143,13 +147,13 @@
               <span class="rank">{i + 1}</span>
               <div class="cov ico">♫</div>
               <div class="meta">
-                <div class="name">{r.name}{#if r.removed}<span class="tag">удалён</span>{/if}</div>
-                <div class="sub">{r.count === null ? '—' : `${r.count} ${plural(r.count, 'трек', 'трека', 'треков')}`}</div>
+                <div class="name">{r.name}{#if r.removed}<span class="tag">{tt('удалён')}</span>{/if}</div>
+                <div class="sub">{r.count === null ? '—' : `${r.count} ${plural(r.count, tt('трек'), tt('трека'), tt('треков'))}`}</div>
                 <div class="bar"><i style="width:{((sortBy === 'sec' ? r.sec : r.plays) / maxPl) * 100}%"></i></div>
               </div>
               <div class="nums">
-                <div class="n1">{sortBy === 'sec' ? fmtDur(r.sec) : `${r.plays} ${plural(r.plays, 'раз', 'раза', 'раз')}`}</div>
-                <div class="n2">{sortBy === 'sec' ? `${r.plays} ${plural(r.plays, 'раз', 'раза', 'раз')}` : fmtDur(r.sec)}</div>
+                <div class="n1">{sortBy === 'sec' ? fmtDur(r.sec) : `${r.plays} ${plural(r.plays, tt('раз'), tt('раза'), tt('раз'))}`}</div>
+                <div class="n2">{sortBy === 'sec' ? `${r.plays} ${plural(r.plays, tt('раз'), tt('раза'), tt('раз'))}` : fmtDur(r.sec)}</div>
               </div>
             </li>
           {/each}
@@ -159,7 +163,7 @@
   </div>
 
   <div class="foot">
-    <button class="reset" class:armed on:click={onReset}>{armed ? 'Нажмите ещё раз для сброса' : 'Сбросить статистику'}</button>
+    <button class="reset" class:armed on:click={onReset}>{armed ? tt('Нажмите ещё раз для сброса') : tt('Сбросить статистику')}</button>
   </div>
 </section>
 

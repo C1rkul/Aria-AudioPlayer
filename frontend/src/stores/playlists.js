@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n.js';
 // Плейлисты и очередь воспроизведения. Плейлист хранит только id треков библиотеки.
 // Playlists and the playback queue. A playlist stores only library track ids.
 import { writable, get } from 'svelte/store';
@@ -14,7 +15,7 @@ function persist() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     SavePlaylistsData({ playlists: get(playlists), queue: get(queue) })
-      .catch((err) => console.error('Не удалось сохранить плейлисты:', err));
+      .catch((err) => console.error(tr('Не удалось сохранить плейлисты:'), err));
   }, 400);
 }
 
@@ -31,7 +32,7 @@ export async function loadPlaylists() {
       index: Number.isInteger(q?.index) ? q.index : -1,
     });
   } catch (err) {
-    console.error('Не удалось загрузить плейлисты:', err);
+    console.error(tr('Не удалось загрузить плейлисты:'), err);
   } finally {
     playlistsLoaded.set(true);
   }
@@ -40,7 +41,7 @@ export async function loadPlaylists() {
 // --- плейлисты / playlists ---
 
 export function createPlaylist(name) {
-  const pl = { id: newId(), name: (name || '').trim() || 'Новый плейлист', trackIds: [], createdAt: Date.now() };
+  const pl = { id: newId(), name: (name || '').trim() || tr('Новый плейлист'), trackIds: [], createdAt: Date.now() };
   playlists.update((l) => [...l, pl]);
   persist();
   return pl;

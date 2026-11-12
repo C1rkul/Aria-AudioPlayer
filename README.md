@@ -6,11 +6,9 @@
 
 Локальный аудио-плеер на Go + Wails + Svelte · A local audio player built with Go + Wails + Svelte
 
-`v0.4.0-beta`
+`v0.3.2-beta`
 
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/C1rkul/badge.svg)](https://hub.xerj.org/contributors/C1rkul)
-
-[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?logo=telegram&logoColor=white)](https://t.me/aria_audio_player)
 
 </div>
 
@@ -137,7 +135,7 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 ## Авторы
 
-**made by C1RKUL & Claude x Qwen**
+**made by [Shpionski(aka C1RKUL)](https://t.me/shpionski) & Claude x Qwen**
 
 Проект сделан с помощью ИИ — и мы этого не скрываем.
 
@@ -263,6 +261,6 @@ See [DEVELOPMENT.md](frontend/docs/DEVELOPMENT.md) — which file does what.
 
 ## Credits
 
-**made by C1RKUL & Claude x Qwen**
+**made by [Shpionski(aka C1RKUL)](https://t.me/shpionski) & Claude x Qwen**
 
 This project was built with the help of AI — and we don't hide it.

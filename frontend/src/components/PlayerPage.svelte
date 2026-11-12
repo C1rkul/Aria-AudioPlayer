@@ -1,4 +1,5 @@
 <script>
+  import { fmt, tr, tt } from '../lib/i18n.js';
   import { autohideScroll } from '../lib/autohide-scroll.js';
   import NoteIcon from './NoteIcon.svelte';
   import { AddLocalFiles, AddLocalFolder, OpenLocalFolderDialog, SaveTracks } from '../../wailsjs/go/main/App';
@@ -71,11 +72,11 @@
     menu = { id: track.id, x: Math.min(r.right - w, window.innerWidth - w - 8), y: Math.min(r.bottom + 4, window.innerHeight - h - 8) };
   }
   function closeMenu() { menu = null; }
-  function menuPlayNext() { playerController.playNext(menu.id); showToast('Будет играть следом'); closeMenu(); }
-  function menuAddQueue() { playerController.addToQueue(menu.id); showToast('Добавлено в очередь'); closeMenu(); }
+  function menuPlayNext() { playerController.playNext(menu.id); showToast(tr('Будет играть следом')); closeMenu(); }
+  function menuAddQueue() { playerController.addToQueue(menu.id); showToast(tr('Добавлено в очередь')); closeMenu(); }
   function menuToPlaylist(pl) {
     const n = addToPlaylist(pl.id, [menu.id]);
-    showToast(n ? `Добавлено в «${pl.name}»` : `Уже в «${pl.name}»`);
+    showToast(n ? fmt(tr('Добавлено в «{0}»'), pl.name) : fmt(tr('Уже в «{0}»'), pl.name));
     closeMenu();
   }
   function menuNewPlaylist() { const id = menu.id; closeMenu(); newPlaylist(id); }
@@ -122,8 +123,8 @@
 
   function reportAdded(found) {
     const added = addTracksDedup(found || []);
-    if (added > 0) showToast(`Добавлено треков: ${added}`);
-    else if ((found || []).length > 0) showToast('Эти треки уже есть в списке');
+    if (added > 0) showToast(fmt(tr('Добавлено треков: {0}'), added));
+    else if ((found || []).length > 0) showToast(tr('Эти треки уже есть в списке'));
   }
 
   async function addLocalFiles() {
@@ -138,7 +139,7 @@
       if (!folderPath) return;
       reportAdded(await AddLocalFolder(folderPath));
     } catch (err) {
-      console.error('Ошибка при добавлении папки:', err);
+      console.error(tr('Ошибка при добавлении папки:'), err);
     } finally {
       isScanning = false;
     }
@@ -246,12 +247,12 @@
 
 <div class="player-page">
   <div class="tabs">
-    <button class:active={tab === 'local'} on:click={() => setTab('local')}>Все песни</button>
-    <button class:active={tab === 'external'} on:click={() => setTab('external')}>Внешние</button>
+    <button class:active={tab === 'local'} on:click={() => setTab('local')}>{tt('Все песни')}</button>
+    <button class:active={tab === 'external'} on:click={() => setTab('external')}>{tt('Внешние')}</button>
     {#each $playlists as pl (pl.id)}
       <button class="pl-tab" class:active={tab === 'pl:' + pl.id} on:click={() => setTab('pl:' + pl.id)} title={pl.name}>♫ {pl.name}</button>
     {/each}
-    <button class="add-tab" on:click={() => newPlaylist()} title="Новый плейлист">+</button>
+    <button class="add-tab" on:click={() => newPlaylist()} title="{tt('Новый плейлист')}">+</button>
   </div>
 
   <div class="tab-stage">
@@ -267,13 +268,13 @@
             <input class="pl-name-input" value={activePl.name} maxlength="60" use:focusSelect
               on:blur={commitName} on:keydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { e.currentTarget.value = activePl.name; e.currentTarget.blur(); } }} />
           {:else}
-            <button class="pl-title" on:click={() => (editingName = true)} title="Переименовать">{activePl.name} <span class="pl-count">· {activePl.trackIds.length}</span> ✎</button>
+            <button class="pl-title" on:click={() => (editingName = true)} title="{tt('Переименовать')}">{activePl.name} <span class="pl-count">· {activePl.trackIds.length}</span> ✎</button>
           {/if}
-          <button class="danger" class:armed={confirmDelete} on:click={askDelete}>{confirmDelete ? 'Точно удалить?' : 'Удалить плейлист'}</button>
+          <button class="danger" class:armed={confirmDelete} on:click={askDelete}>{confirmDelete ? tt('Точно удалить?') : tt('Удалить плейлист')}</button>
         {:else}
-          <button on:click={addLocalFiles} disabled={isScanning}>Добавить файлы</button>
+          <button on:click={addLocalFiles} disabled={isScanning}>{tt('Добавить файлы')}</button>
           <button on:click={addLocalFolder} disabled={isScanning}>
-            {isScanning ? 'Сканирование...' : 'Добавить папку'}
+            {isScanning ? tt('Сканирование...') : tt('Добавить папку')}
           </button>
         {/if}
         
@@ -281,7 +282,7 @@
         <div class="search-box">
           <input 
             type="text" 
-            placeholder="Поиск по названию, артисту..." 
+            placeholder="{tt('Поиск по названию, артисту...')}" 
             bind:value={searchQuery}
           />
           {#if searchQuery}
@@ -291,14 +292,14 @@
       </div>
 
       {#if activePl && activePl.trackIds.length === 0}
-        <div class="empty">Плейлист пуст. Добавляйте треки через «⋯» в разделе «Все песни».</div>
+        <div class="empty">{tt('Плейлист пуст. Добавляйте треки через «⋯» в разделе «Все песни».')}</div>
       {:else if $tracks.length === 0}
-        <div class="empty">
-          Локальные треки появятся здесь
+        <div class="empty"
+          >{tt('Локальные треки появятся здесь')}
         </div>
       {:else if filteredTracks.length === 0 && searchQuery}
          <div class="empty">
-           Ничего не найдено по запросу "<strong>{searchQuery}</strong>"
+           {tt('Ничего не найдено по запросу')} "<strong>{searchQuery}</strong>"
          </div>
       {:else}
         <div class="track-list" class:noanim={noAnim} class:reorderable={!searchQuery.trim()} use:autohideScroll>
@@ -329,11 +330,11 @@
               <div class="track-duration">
                 {formatDuration(track.duration)}
               </div>
-              <button class="more-btn" on:click|stopPropagation={(e) => openMenu(e, track)} title="Ещё">⋯</button>
+              <button class="more-btn" on:click|stopPropagation={(e) => openMenu(e, track)} title="{tt('Ещё')}">⋯</button>
               <button
                 class="remove-btn"
                 on:click|stopPropagation={() => removeTrack(index)}
-                title={activePl ? 'Убрать из плейлиста' : 'Удалить трек'}
+                title={activePl ? tt('Убрать из плейлиста') : tt('Удалить трек')}
               >
                 ✕
               </button>
@@ -345,7 +346,7 @@
   {:else}
     <section class="coming-soon">
       <h1>COMING SOON</h1>
-      <p>Внешние источники скоро появятся</p>
+      <p>{tt('Внешние источники скоро появятся')}</p>
     </section>
   {/if}
   </div>
@@ -358,15 +359,15 @@
 {#if menu}
   <div class="menu-backdrop" on:click={closeMenu} on:contextmenu|preventDefault={closeMenu} role="presentation"></div>
   <div class="track-menu" style="left:{menu.x}px;top:{menu.y}px" transition:fly={{ y: -6, duration: 140 }}>
-    <button on:click={menuPlayNext}>Играть следом</button>
-    <button on:click={menuAddQueue}>Добавить в очередь</button>
+    <button on:click={menuPlayNext}>{tt('Играть следом')}</button>
+    <button on:click={menuAddQueue}>{tt('Добавить в очередь')}</button>
     <div class="menu-sep"></div>
     {#each $playlists as pl (pl.id)}
       <button on:click={() => menuToPlaylist(pl)}>
         <span class="menu-pl">♫ {pl.name}</span>{#if pl.trackIds.includes(menu.id)}<span class="menu-check">✓</span>{/if}
       </button>
     {/each}
-    <button on:click={menuNewPlaylist}>+ Новый плейлист</button>
+    <button on:click={menuNewPlaylist}>{tt('+ Новый плейлист')}</button>
   </div>
 {/if}
 

@@ -1,4 +1,5 @@
 <script>
+  import { fmt, tr, tt } from '../lib/i18n.js';
   import { settings, defaultSettings, updateSettings } from '../stores/settings.js';
   import RangeField from './RangeField.svelte';
   import { clearTrackRefs } from '../stores/playlists.js';
@@ -17,23 +18,23 @@
   const BG_INFO = {
     none: {
       title: 'None',
-      text: 'None — без фонового эффекта: чистый фон выбранной темы. Меньше всего нагружает компьютер.'
+      text: tr('None — без фонового эффекта: чистый фон выбранной темы. Меньше всего нагружает компьютер.')
     },
     particle: {
       title: 'Particle',
-      text: 'Particle («частицы») — плавающие точки в цвет акцента, которые соединяются линиями, когда оказываются рядом. «Количество точек» — сколько частиц на экране: чем их больше, тем гуще сеть линий и выше нагрузка.'
+      text: tr('Particle («частицы») — плавающие точки в цвет акцента, которые соединяются линиями, когда оказываются рядом. «Количество точек» — сколько частиц на экране: чем их больше, тем гуще сеть линий и выше нагрузка.')
     },
     babble: {
       title: 'Babble',
-      text: 'Babble (от bubble — «пузыри») — большие светящиеся цветные пузыри, которые медленно дрейфуют по экрану и плавно меняют оттенок. «Количество пузырей» — сколько их одновременно: больше пузырей — ярче и насыщеннее фон.'
+      text: tr('Babble (от bubble — «пузыри») — большие светящиеся цветные пузыри, которые медленно дрейфуют по экрану и плавно меняют оттенок. «Количество пузырей» — сколько их одновременно: больше пузырей — ярче и насыщеннее фон.')
     },
     matrix: {
       title: 'Matrix',
-      text: 'Matrix («цифровой дождь») — падающие колонки символов, как в фильме «Матрица». «Скорость» — как быстро символы падают вниз. «Плотность символов» — доля колонок экрана, в которых идёт дождь: меньше — реже и спокойнее.'
+      text: tr('Matrix («цифровой дождь») — падающие колонки символов, как в фильме «Матрица». «Скорость» — как быстро символы падают вниз. «Плотность символов» — доля колонок экрана, в которых идёт дождь: меньше — реже и спокойнее.')
     },
     aurora: {
       title: 'Aurora',
-      text: 'Aurora («северное сияние») — мягкие светящиеся туманности, которые плавно плывут и переливаются разными цветами. «Количество туманностей» — сколько облаков одновременно: больше — богаче и ярче переливы.'
+      text: tr('Aurora («северное сияние») — мягкие светящиеся туманности, которые плавно плывут и переливаются разными цветами. «Количество туманностей» — сколько облаков одновременно: больше — богаче и ярче переливы.')
     }
   };
   $: bgInfo = BG_INFO[$settings.background] || BG_INFO.none;
@@ -49,7 +50,7 @@
       clearTrackRefs();
       await SaveTracks([]);
     } catch (err) {
-      console.error('Не удалось очистить треки:', err);
+      console.error(tr('Не удалось очистить треки:'), err);
     } finally {
       clearing = false;
     }
@@ -66,7 +67,7 @@
         settings.set({ ...defaultSettings, ...saved });
       }
     } catch (err) {
-      console.error('Не удалось сбросить настройки:', err);
+      console.error(tr('Не удалось сбросить настройки:'), err);
     }
   }
 
@@ -74,17 +75,17 @@
     try {
       await OpenDataFolder();
     } catch (err) {
-      console.error('Не удалось открыть папку:', err);
+      console.error(tr('Не удалось открыть папку:'), err);
     }
   }
 </script>
 
 <section class="settings-page">
-  <h2>Настройки</h2>
+  <h2>{tt('Настройки')}</h2>
 
   <div class="tabs">
-    <button class="chip" class:active={tab === 'general'} on:click={() => setTab('general')}>Основные</button>
-    <button class="chip" class:active={tab === 'nowplaying'} on:click={() => setTab('nowplaying')}>Большой экран</button>
+    <button class="chip" class:active={tab === 'general'} on:click={() => setTab('general')}>{tt('Основные')}</button>
+    <button class="chip" class:active={tab === 'nowplaying'} on:click={() => setTab('nowplaying')}>{tt('Большой экран')}</button>
   </div>
 
   <div class="tab-stage">
@@ -95,31 +96,29 @@
   {#if tab === 'nowplaying'}
   <div class="grid">
     <div class="card">
-      <h3>Адаптивный фон</h3>
+      <h3>{tt('Адаптивный фон')}</h3>
       <div class="switch-row">
-        <span>Подстраивать фон под цвет обложки</span>
+        <span>{tt('Подстраивать фон под цвет обложки')}</span>
         <label class="switch">
           <input
             type="checkbox"
             role="switch"
-            aria-label="Адаптивный фон"
+            aria-label="{tt('Адаптивный фон')}"
             checked={$settings.adaptiveBackground}
             on:change={(e) => updateSettings({ adaptiveBackground: e.currentTarget.checked })}
           />
           <span class="slider"></span>
         </label>
       </div>
-      <p class="hint">
-        Работает только на большом экране (Now Playing). При включении дизайн и фоновые эффекты
-        (Particle, Matrix и т.д.) там отключаются, а фон окрашивается в цвет обложки.
-        Если у трека нет обложки, фон тёмный.
+      <p class="hint"
+        >{tt('Работает только на большом экране (Now Playing). При включении дизайн и фоновые эффекты (Particle, Matrix и т.д.) там отключаются, а фон окрашивается в цвет обложки. Если у трека нет обложки, фон тёмный.')}
       </p>
     </div>
 
     <div class="card">
-      <h3>API для поиска текста</h3>
+      <h3>{tt('API для поиска текста')}</h3>
       <div class="field">
-        <label for="lyrics-api">Ссылка на API</label>
+        <label for="lyrics-api">{tt('Ссылка на API')}</label>
         <input
           id="lyrics-api"
           type="text"
@@ -128,37 +127,68 @@
           placeholder={LYRICS_PLACEHOLDER}
         />
       </div>
-      <p class="hint placeholder">Поиск текста через внешний API — в процессе разработки. Поле пока недоступно.</p>
+      <p class="hint placeholder">{tt('Поиск текста через внешний API — в процессе разработки. Поле пока недоступно.')}</p>
     </div>
   </div>
   {:else}
   <div class="grid">
     <div class="card">
-      <h3>Тема</h3>
+      <h3>{tt('Язык')}</h3>
+      <div class="lang-row">
+        <button class="chip" class:active={$settings.language !== 'en'} on:click={() => updateSettings({ language: 'ru' })}>{tt('Русский')}</button>
+        <button class="chip" class:active={$settings.language === 'en'} on:click={() => updateSettings({ language: 'en' })}>English</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>{tt('Стиль')}</h3>
+      <div class="lang-row">
+        <button class="chip" class:active={!$settings.styleAuto && $settings.style === 'normal'} on:click={() => updateSettings({ style: 'normal', styleAuto: false, palette: 'base' })}>{tt('Обычная')}</button>
+        <button class="chip" class:active={!$settings.styleAuto && $settings.style === 'halloween'} on:click={() => updateSettings({ style: 'halloween', styleAuto: false, palette: 'base' })}>🎃 {tt('Хеллоуин')}</button>
+        <button class="chip" class:active={!$settings.styleAuto && $settings.style === 'ny'} on:click={() => updateSettings({ style: 'ny', styleAuto: false, palette: 'base' })}>🎄 {tt('Новый Год')}</button>
+      </div>
+      <div class="switch-row" style="margin-top: 12px">
+        <span>{tt('Автоматически по праздникам')}</span>
+        <label class="switch">
+          <input
+            type="checkbox"
+            role="switch"
+            aria-label="{tt('Автоматически по праздникам')}"
+            checked={$settings.styleAuto}
+            on:change={(e) => updateSettings({ styleAuto: e.currentTarget.checked, palette: 'base' })}
+          />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p class="hint">{tt('Авто: 28–31 октября — Хеллоуин, 24 декабря — 10 января — Новый Год. Ручной выбор автоматически выключает автосмену.')}</p>
+    </div>
+
+    <div class="card">
+      <h3>{tt('Тема')}</h3>
       <div class="button-group">
         <button
           class="chip"
           class:active={$settings.theme === 'dark'}
           on:click={() => updateSettings({ theme: 'dark' })}
-        >
-          Тёмная
+        
+          >{tt('Тёмная')}
         </button>
 
         <button
           class="chip"
           class:active={$settings.theme === 'light'}
           on:click={() => updateSettings({ theme: 'light' })}
-        >
-          Светлая
+        
+          >{tt('Светлая')}
         </button>
       </div>
       <div class="switch-row neon-row">
-        <span>Неоновая обводка экрана</span>
+        <span>{tt('Неоновая обводка экрана')}</span>
         <label class="switch">
           <input
             type="checkbox"
             role="switch"
-            aria-label="Неоновая обводка экрана"
+            aria-label="{tt('Неоновая обводка экрана')}"
             checked={$settings.neonFrame}
             on:change={(e) => updateSettings({ neonFrame: e.currentTarget.checked })}
           />
@@ -168,14 +198,14 @@
     </div>
 
     <div class="card">
-      <h3>Дизайн</h3>
+      <h3>{tt('Дизайн')}</h3>
       <div class="button-group">
         <button
           class="chip"
           class:active={$settings.design === 'normal'}
           on:click={() => updateSettings({ design: 'normal' })}
-        >
-          Обычный
+        
+          >{tt('Обычный')}
         </button>
 
         <button
@@ -191,17 +221,17 @@
           class:active={$settings.design === 'glass_plus'}
           on:click={() => updateSettings({ design: 'glass_plus' })}
         >
-          Glassmorphism+
+          {tt('Glassmorphism+')}
         </button>
       </div>
 
       <p class="hint">
-        Glassmorphism+ — монолитный основной фон и стеклянные панели.
+        {tt('Glassmorphism+ — монолитный основной фон и стеклянные панели.')}
       </p>
     </div>
 
     <div class="card">
-      <h3>Фон</h3>
+      <h3>{tt('Фон')}</h3>
       <div class="button-group">
         <button
           class="chip"
@@ -245,20 +275,20 @@
       </div>
 
       {#if $settings.background === 'particle'}
-        <RangeField id="bg-particle" label="Количество точек" min={10} max={200} step={5}
+        <RangeField id="bg-particle" label="{tt('Количество точек')}" min={10} max={200} step={5}
           value={$settings.particleCount} on:change={(e) => updateSettings({ particleCount: e.detail })} />
       {:else if $settings.background === 'babble'}
-        <RangeField id="bg-babble" label="Количество пузырей" min={5} max={60} step={1}
+        <RangeField id="bg-babble" label="{tt('Количество пузырей')}" min={5} max={60} step={1}
           value={$settings.babbleCount} on:change={(e) => updateSettings({ babbleCount: e.detail })} />
       {:else if $settings.background === 'matrix'}
-        <RangeField id="bg-matrix-speed" label="Скорость" min={0.3} max={3} step={0.1}
+        <RangeField id="bg-matrix-speed" label="{tt('Скорость')}" min={0.3} max={3} step={0.1}
           value={$settings.matrixSpeed} format={(v) => '×' + Number(v).toFixed(1)}
           on:change={(e) => updateSettings({ matrixSpeed: e.detail })} />
-        <RangeField id="bg-matrix-density" label="Плотность символов" min={10} max={100} step={5}
+        <RangeField id="bg-matrix-density" label="{tt('Плотность символов')}" min={10} max={100} step={5}
           value={$settings.matrixDensity} format={(v) => v + '%'}
           on:change={(e) => updateSettings({ matrixDensity: e.detail })} />
       {:else if $settings.background === 'aurora'}
-        <RangeField id="bg-aurora" label="Количество туманностей" min={1} max={12} step={1}
+        <RangeField id="bg-aurora" label="{tt('Количество туманностей')}" min={1} max={12} step={1}
           value={$settings.auroraCount} on:change={(e) => updateSettings({ auroraCount: e.detail })} />
       {/if}
 
@@ -266,29 +296,29 @@
     </div>
 
     <div class="card">
-      <h3>Палитра</h3>
+      <h3>{tt('Палитра')}</h3>
 
       <div class="button-group">
         <button
           class="chip"
           class:active={$settings.palette === 'base'}
           on:click={() => updateSettings({ palette: 'base' })}
-        >
-          Базовая
+        
+          >{tt('Базовая')}
         </button>
 
         <button
           class="chip"
           class:active={$settings.palette === 'custom'}
           on:click={() => updateSettings({ palette: 'custom' })}
-        >
-          Своя
+        
+          >{tt('Своя')}
         </button>
       </div>
 
       {#if $settings.palette === 'custom'}
         <div class="color-row">
-          <label for="accent-color">Accent цвет</label>
+          <label for="accent-color">{tt('Accent цвет')}</label>
           <input
             id="accent-color"
             type="color"
@@ -301,19 +331,19 @@
     </div>
 
     <div class="card">
-      <h3>Плеер</h3>
+      <h3>{tt('Плеер')}</h3>
 
-      <RangeField id="default-volume" label="Громкость по умолчанию" min={0} max={100} step={1}
+      <RangeField id="default-volume" label="{tt('Громкость по умолчанию')}" min={0} max={100} step={1}
         value={Math.round($volumeStore * 100)} format={(v) => v + '%'}
         on:change={(e) => playerController.setVolume(e.detail / 100)} />
 
       <div class="switch-row restore-row">
-        <span>Восстанавливать последний трек при запуске</span>
+        <span>{tt('Восстанавливать последний трек при запуске')}</span>
         <label class="switch">
           <input
             type="checkbox"
             role="switch"
-            aria-label="Восстанавливать последний трек при запуске"
+            aria-label="{tt('Восстанавливать последний трек при запуске')}"
             checked={$settings.restoreLastTrack}
             on:change={(e) => updateSettings({ restoreLastTrack: e.currentTarget.checked })}
           />
@@ -323,15 +353,15 @@
     </div>
 
     <div class="card">
-      <h3>Кроссфейд</h3>
+      <h3>{tt('Кроссфейд')}</h3>
 
       <div class="switch-row restore-row">
-        <span>Плавный переход между треками</span>
+        <span>{tt('Плавный переход между треками')}</span>
         <label class="switch">
           <input
             type="checkbox"
             role="switch"
-            aria-label="Кроссфейд при переключении треков"
+            aria-label="{tt('Кроссфейд при переключении треков')}"
             checked={$settings.crossfadeEnabled}
             on:change={(e) => updateSettings({ crossfadeEnabled: e.currentTarget.checked })}
           />
@@ -342,23 +372,23 @@
       {#if $settings.crossfadeEnabled}
         <RangeField
           id="crossfade-duration"
-          label="Длительность перехода"
+          label="{tt('Длительность перехода')}"
           min={1}
           max={12}
           step={0.5}
           value={$settings.crossfadeDuration ?? 5}
-          format={(v) => `${v} с`}
+          format={(v) => fmt(tt('{0} с'), v)}
           on:change={(e) => updateSettings({ crossfadeDuration: e.detail })}
         />
-        <p class="hint">Старый трек плавно затухает, новый плавно вступает — при автоматическом переходе к следующему треку и в конце очереди (затихание). Любые ручные переключения — всегда мгновенные.</p>
+        <p class="hint">{tt('Старый трек плавно затухает, новый плавно вступает — при автоматическом переходе к следующему треку и в конце очереди (затихание). Любые ручные переключения — всегда мгновенные.')}</p>
       {/if}
     </div>
 
     <div class="card">
-      <h3>Данные</h3>
+      <h3>{tt('Данные')}</h3>
 
       <div class="field">
-        <label for="data-folder">Папка сохранения</label>
+        <label for="data-folder">{tt('Папка сохранения')}</label>
         <input
           id="data-folder"
           type="text"
@@ -368,8 +398,8 @@
       </div>
 
       <div class="button-group">
-        <button class="chip" on:click={openDataFolder}>
-          Открыть папку
+        <button class="chip" on:click={openDataFolder}
+          >{tt('Открыть папку')}
         </button>
 
         <button
@@ -377,17 +407,17 @@
           on:click={clearTracks}
           disabled={$tracks.length === 0 || clearing}
         >
-          {clearing ? 'Очистка...' : 'Очистить список треков'}
+          {clearing ? tt('Очистка...') : tt('Очистить список треков')}
         </button>
       </div>
     </div>
 
     <div class="card">
-      <h3>Система</h3>
+      <h3>{tt('Система')}</h3>
 
       <div class="button-group">
-        <button class="chip danger" on:click={resetSettings}>
-          Сбросить настройки
+        <button class="chip danger" on:click={resetSettings}
+          >{tt('Сбросить настройки')}
         </button>
       </div>
     </div>
@@ -397,7 +427,7 @@
   {/key}
   </div>
 
-  <p class="note">Новые функции позже. Идет работа.</p>
+  <p class="note">{tt('Новые функции позже. Идет работа.')}</p>
 </section>
 
 <style>
@@ -468,6 +498,8 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+
+  .lang-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
   .chip {
     padding: 9px 13px;

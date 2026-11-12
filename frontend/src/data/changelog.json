@@ -1,6 +1,26 @@
 {
   "entries": [
     {
+      "version": "0.4.1-beta",
+      "title": "Стиль по праздникам и переводы",
+      "added": [
+        "Автоматический акцент оформления и бейдж издания на странице «О программе» — по активному стилю",
+        "Стиль: смена темы под праздник — Хеллоуин, Новый Год или обычная; вручную или автоматически по дате (ручной выбор сам выключает автосмену)",
+		"Незначительные изменения в коде."
+      ],
+      "fixed": [],
+      "en": {
+        "title": "Holiday styles and translations",
+        "added": [
+          "Automatic design accent and publication badge on the “About the Program” page — according to the active style",
+          "Style: holiday theming — Halloween, New Year or regular; manual or automatic by date (a manual pick turns auto-switching off by itself)",
+		  "Minor updates in code."
+        ],
+
+        "fixed": []
+      }
+    },
+    {
       "version": "0.3.2-beta",
       "title": "Новый логотип, иконки и окно без рамки",
       "added": [
@@ -17,7 +37,25 @@
       "fixed": [
         "Уход большой страницы: сначала замирала, потом резко падала вниз — теперь быстрый ровный уход (~0.2 с)",
         "Кнопки «Предыдущий/Следующий» в подвале были не по центру"
-      ]
+      ],
+      "en": {
+        "title": "New logo, icons and a frameless window",
+        "added": [
+          "Animated logo — the letter “A” built from equalizer bars in the sidebar",
+          "A custom app icon instead of the default one",
+          "Frameless window: “— ×” buttons in the top-left, the window is dragged by the top strip, the maximize button is gone",
+          "Crossfade with a configurable duration — smooth transition only on auto-advance; manual switches are always instant"
+        ],
+        "changed": [
+          "Emoji replaced with real SVG icons: ⏮ ⏭ in the footer and on the big screen, 🎵 in lists and covers, ▶ on playlist cards",
+          "The big screen can be closed only with ESC or the ✕ button — clicking the background no longer closes it",
+          "The scrollbar in the Settings tab of the big screen is hidden — the content scrolls by wheel and dragging"
+        ],
+        "fixed": [
+          "Big screen exit used to freeze and then drop sharply — now it's a quick smooth exit (~0.2 s)",
+          "The Previous/Next buttons in the footer were not centered"
+        ]
+      }
     },
     {
       "version": "0.3.0-beta",
@@ -36,7 +74,25 @@
       ],
       "fixed": [
         "Перетаскивание треков перестаёт работать после переключения вкладок"
-      ]
+      ],
+      "en": {
+        "title": "Playlists, queue and a new visualizer",
+        "added": [
+          "Playlists: tabs in the player, a Playlists page, a “⋯” menu on every track",
+          "Playback queue: “Play next”, “Add to queue”",
+          "Tabs on the big screen: “Lyrics”, “Queue”, “Playlist” and “Settings”",
+          "Speed and pitch with 0.5×–2× presets and a link button",
+          "Visualizer presets: Normal, Round (with rotation), Big (background) and a bar-count selector",
+          "A “What's new” window and an “Updates” button"
+        ],
+        "changed": [
+          "The “Local” tab is now called “All songs”",
+          "Next, previous and shuffle now work within the current queue"
+        ],
+        "fixed": [
+          "Dragging tracks stopped working after switching tabs"
+        ]
+      }
     },
     {
       "version": "0.2.0-beta",
@@ -52,7 +108,22 @@
       ],
       "fixed": [
         "Плавное закрытие большой страницы"
-      ]
+      ],
+      "en": {
+        "title": "Drag-and-drop and smooth animations",
+        "added": [
+          "Dragging files and folders from the explorer into the window",
+          "Reorder tracks by dragging",
+          "Smooth slide animations between tabs",
+          "App version in the sidebar"
+        ],
+        "changed": [
+          "Volume is synced: footer, big screen and settings share a single slider"
+        ],
+        "fixed": [
+          "Smooth closing of the big screen"
+        ]
+      }
     },
     {
       "version": "0.1.0-beta",
@@ -62,7 +133,16 @@
         "Темы, дизайны и фоновые эффекты",
         "Большая страница с адаптивным фоном и визуализатором",
         "Заставка с логотипом"
-      ]
+      ],
+      "en": {
+        "title": "First release",
+        "added": [
+          "Local player: files and folders, search, covers and metadata",
+          "Themes, designs and background effects",
+          "Big screen with an adaptive background and visualizer",
+          "Splash screen with the logo"
+        ]
+      }
     }
   ]
 }

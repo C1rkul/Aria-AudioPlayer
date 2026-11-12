@@ -39,9 +39,14 @@
 
   // Wails Bindings
   import { LoadTracks, LoadSettings, GetStreamBaseURL } from '../wailsjs/go/main/App';
+  import { fmt, locale, tr, tt } from './lib/i18n.js';
+  import { accentFor } from './lib/holiday.js';
 
   // State
   let page = 'player';
+
+  // Язык интерфейса: settings → i18n-стор (реактивно, при смене в настройках)
+  $: locale.set($settings.language || 'ru');
   let showNowPlaying = false;
   let streamBase = '';
   
@@ -106,6 +111,7 @@
       const loadedSettings = await LoadSettings();
       const merged = { ...defaultSettings, ...(loadedSettings || {}) };
       settings.set(merged);
+      locale.set(merged.language || 'ru');
       settingsLoaded = true;
       playerController.setVolume(merged.defaultVolume ?? 0.5, false);
       
@@ -203,7 +209,8 @@
     const theme = s.theme === 'light' ? 'light' : 'dark';
     const design = ['glass', 'glass_plus'].includes(s.design) ? s.design : 'normal';
     const palette = s.palette === 'custom' ? 'custom' : 'base';
-    const accent = palette === 'custom' ? (s.customAccent || '#7c5cff') : '#7c5cff';
+    // Стиль («Стиль» в настройках): ручной выбор или авто по дате; «Своя» палитра важнее
+    const accent = accentFor(s);
 
     document.body.dataset.theme = theme;
     document.body.dataset.design = design;
@@ -240,12 +247,12 @@
     try {
       const found = await AddPaths(paths);
       const added = addTracksDedup(found || []);
-      if (added > 0) showToast(`Добавлено треков: ${added}`);
-      else if ((found || []).length > 0) showToast('Эти треки уже есть в списке');
-      else showToast('Поддерживаемых аудиофайлов не найдено');
+      if (added > 0) showToast(fmt(tr('Добавлено треков: {0}'), added));
+      else if ((found || []).length > 0) showToast(tr('Эти треки уже есть в списке'));
+      else showToast(tr('Поддерживаемых аудиофайлов не найдено'));
     } catch (err) {
-      console.error('Ошибка при добавлении перетащенных файлов:', err);
-      showToast('Не удалось добавить файлы');
+      console.error(tr('Ошибка при добавлении перетащенных файлов:'), err);
+      showToast(tr('Не удалось добавить файлы'));
     }
   }
 
@@ -255,7 +262,7 @@
     window.addEventListener('dragover', onDragOver);
     window.addEventListener('drop', onDropEnd);
     window.addEventListener('dragend', onDropEnd);
-    try { OnFileDrop((x, y, paths) => { onDropEnd(); handleDroppedPaths(paths); }, false); } catch (e) { console.warn('OnFileDrop недоступен:', e); }
+    try { OnFileDrop((x, y, paths) => { onDropEnd(); handleDroppedPaths(paths); }, false); } catch (e) { console.warn(tr('OnFileDrop недоступен:'), e); }
     return () => {
       window.removeEventListener('dragenter', onDragEnter);
       window.removeEventListener('dragleave', onDragLeave);
@@ -281,6 +288,7 @@
 {/if}
 
 <div class="layout" inert={showSplash}>
+  {#key $locale}
   <!-- Пустой верхний ряд (40px) — резерв под слой окна; сам слой живёт ниже, вне inert -->
   <aside class="sidebar">
     <div class="logo-block">
@@ -289,15 +297,15 @@
     </div>
     <nav class="nav" bind:this={navEl}>
       <span class="nav-ind" class:ready={ind.ready} style="transform:translateY({ind.top}px);height:{ind.h}px"></span>
-      <button class:active={page === 'player'} on:click={() => (page = 'player')}>Плеер</button>
-      <button class:active={page === 'playlists'} on:click={() => (page = 'playlists')}>Плейлисты</button>
-      <button class:active={page === 'stats'} on:click={() => (page = 'stats')}>Статистика</button>
-      <button class:active={page === 'settings'} on:click={() => (page = 'settings')}>Настройки</button>
-      <button class:active={page === 'about'} on:click={() => (page = 'about')}>О приложении</button>
+      <button class:active={page === 'player'} on:click={() => (page = 'player')}>{tt('Плеер')}</button>
+      <button class:active={page === 'playlists'} on:click={() => (page = 'playlists')}>{tt('Плейлисты')}</button>
+      <button class:active={page === 'stats'} on:click={() => (page = 'stats')}>{tt('Статистика')}</button>
+      <button class:active={page === 'settings'} on:click={() => (page = 'settings')}>{tt('Настройки')}</button>
+      <button class:active={page === 'about'} on:click={() => (page = 'about')}>{tt('О приложении')}</button>
     </nav>
     <div class="sidebar-foot">
-      <button class="updates-btn" on:click={() => (showUpdates = true)} title="Что нового">
-        Обновления{#if hasNewVersion}<span class="dot"></span>{/if}
+      <button class="updates-btn" on:click={() => (showUpdates = true)} title="{tt('Что нового')}">
+        {tt('Обновления')}{#if hasNewVersion}<span class="dot"></span>{/if}
       </button>
     </div>
   </aside>
@@ -329,7 +337,7 @@
       style="cursor:pointer;"
       role="button"
       tabindex="0"
-      aria-label="Открыть режим Now Playing"
+      aria-label="{tt('Открыть режим Now Playing')}"
     >
       <div class="cover">
         <CoverImage
@@ -338,23 +346,23 @@
         />
       </div>
       <div class="info-text">
-        <div class="title"><Marquee text={$currentTrack ? $currentTrack.title : 'Ничего не играет'} /></div>
-        <div class="subtitle"><Marquee text={$currentTrack ? ($currentTrack.artist || 'Локальный файл') : ''} /></div>
+        <div class="title"><Marquee text={$currentTrack ? $currentTrack.title : tt('Ничего не играет')} /></div>
+        <div class="subtitle"><Marquee text={$currentTrack ? ($currentTrack.artist || tt('Локальный файл')) : ''} /></div>
       </div>
     </div>
 
     <!-- Center Controls -->
     <div class="player-controls">
       <div class="controls">
-        <button class="mode-btn" class:active={$repeatMode !== 'off'} on:click={() => repeatMode.update(v => v==='off'?'all':v==='all'?'one':'off')} title={$repeatMode === 'one' ? 'Повтор: один трек' : $repeatMode === 'all' ? 'Повтор: весь список' : 'Повтор выключен'}>
+        <button class="mode-btn" class:active={$repeatMode !== 'off'} on:click={() => repeatMode.update(v => v==='off'?'all':v==='all'?'one':'off')} title={$repeatMode === 'one' ? tt('Повтор: один трек') : $repeatMode === 'all' ? tt('Повтор: весь список') : tt('Повтор выключен')}>
           <RepeatIcon mode={$repeatMode} />
         </button>
-        <button class="nav-btn" on:click={() => playerController.prev()} title="Предыдущий"><SkipIcon back /></button>
-        <button class="play-btn" on:click={() => playerController.togglePlay()} title={$isPlaying ? 'Пауза' : 'Играть'}>
+        <button class="nav-btn" on:click={() => playerController.prev()} title="{tt('Предыдущий')}"><SkipIcon back /></button>
+        <button class="play-btn" on:click={() => playerController.togglePlay()} title={$isPlaying ? tt('Пауза') : tt('Играть')}>
           <PlayPauseIcon playing={$isPlaying} />
         </button>
-        <button class="nav-btn" on:click={() => playerController.next()} title="Следующий"><SkipIcon /></button>
-        <button class="mode-btn" class:active={$shuffleEnabled} on:click={() => shuffleEnabled.update(v=>!v)} title={$shuffleEnabled ? 'Перемешивание включено' : 'Перемешивание выключено'}>
+        <button class="nav-btn" on:click={() => playerController.next()} title="{tt('Следующий')}"><SkipIcon /></button>
+        <button class="mode-btn" class:active={$shuffleEnabled} on:click={() => shuffleEnabled.update(v=>!v)} title={$shuffleEnabled ? tt('Перемешивание включено') : tt('Перемешивание выключено')}>
           <ShuffleIcon />
         </button>
       </div>
@@ -372,14 +380,15 @@
       <input bind:this={volumeInputEl} type="range" min="0" max="100" value={volume*100} on:input={changeVolume} />
     </div>
   </footer>
+  {/key}
 </div>
 
 {#if dropActive}
   <div class="drop-overlay" transition:fade={{ duration: 160 }}>
     <div class="drop-box">
       <div class="drop-icon">⬇</div>
-      <div class="drop-title">Отпустите, чтобы добавить</div>
-      <div class="drop-sub">Аудиофайлы или папки с музыкой</div>
+      <div class="drop-title">{tt('Отпустите, чтобы добавить')}</div>
+      <div class="drop-sub">{tt('Аудиофайлы или папки с музыкой')}</div>
     </div>
   </div>
 {/if}
@@ -405,13 +414,15 @@
 <audio bind:this={audioElement}></audio>
 
 <!-- Fullscreen Modal -->
-{#if showNowPlaying}
-  <NowPlayingPage streamBaseUrl={streamBase} />
-{/if}
+{#key $locale}
+  {#if showNowPlaying}
+    <NowPlayingPage streamBaseUrl={streamBase} />
+  {/if}
+{/key}
 
 <style>
   /* ... Все те же глобальные стили тем и ползунков, что были раньше ... */
-  :global(:root) { --bg:#0f0f12; --surface:#15151a; --text:#f2f2f5; --muted:#9aa0aa; --border:rgba(255,255,255,0.08); --accent:#7c5cff; --accent-rgb:124,92,255; --panel-bg:var(--surface); --item-bg:rgba(255,255,255,0.04); --item-border:rgba(255,255,255,0.07); --blur:0px; }
+  :global(:root) { --bg:#0f0f12; --surface:#15151a; --text:#f2f2f5; --muted:#9aa0aa; --border:rgba(255,255,255,0.08); --accent:#ff9500; --accent-rgb:255,149,0; --panel-bg:var(--surface); --item-bg:rgba(255,255,255,0.04); --item-border:rgba(255,255,255,0.07); --blur:0px; }
   :global(body) { margin:0; background:var(--bg); color:var(--text); font-family:sans-serif; overflow:hidden; }
   :global(input[type='range']) { -webkit-appearance:none; width:100%; height:6px; border-radius:3px; background:linear-gradient(to right, var(--accent) var(--fill-percent,0%), var(--item-border) var(--fill-percent,0%)); cursor:pointer; outline:none;}
   :global(input[type='range']::-webkit-slider-thumb) { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 0 0 2px var(--accent);}

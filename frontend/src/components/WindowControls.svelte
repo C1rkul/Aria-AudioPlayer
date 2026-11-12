@@ -1,17 +1,18 @@
 <script>
+  import { tt } from '../lib/i18n.js';
   // Кнопки окна (фреймлесс): только «закрыть» и «свернуть».
   // «Развернуть» убрано — функция пока не работает.
   import { WindowMinimise, Quit } from '../../wailsjs/runtime/runtime';
 </script>
 
 <div class="win-controls">
-  <button class="wc-btn" on:click={() => Quit()} title="Закрыть" aria-label="Закрыть окно">
+  <button class="wc-btn" on:click={() => Quit()} title="{tt('Закрыть')}" aria-label="{tt('Закрыть окно')}">
     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
       <path d="M2.75 2.75L9.25 9.25M9.25 2.75L2.75 9.25" />
     </svg>
   </button>
 
-  <button class="wc-btn" on:click={() => WindowMinimise()} title="Свернуть" aria-label="Свернуть окно">
+  <button class="wc-btn" on:click={() => WindowMinimise()} title="{tt('Свернуть')}" aria-label="{tt('Свернуть окно')}">
     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
       <path d="M2 6.5H10" />
     </svg>

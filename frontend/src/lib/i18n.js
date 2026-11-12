@@ -1,0 +1,274 @@
+// i18n — интерфейс на двух языках (ru / en)
+// RU-строка = ключ перевода: непереведённые строки остаются как есть.
+// Реактивность: смена языка меняет store `locale`; App оборачивает весь
+// интерфейс в {#key $locale}, поэтому перезмонтированные компоненты
+// вызывают tt()/tr() уже с новым слоем.
+
+import { writable, get } from 'svelte/store';
+
+export const locale = writable('ru'); // 'ru' | 'en'
+
+// Английские переводы. Ключ — русская строка интерфейса.
+export const EN = {
+  // —— Общее ——
+  'Плеер': 'Player',
+  'Плейлисты': 'Playlists',
+  'Статистика': 'Statistics',
+  'Настройки': 'Settings',
+  'О приложении': 'About',
+  'Обновления': 'Updates',
+  'Что нового': "What's new",
+  'Понятно': 'Got it',
+  'Прошлые версии': 'Past versions',
+  'Скрыть прошлые версии': 'Hide past versions',
+  'Автообновление по сети появится позже': 'Online auto-update will arrive later',
+  'Новые функции позже. Идет работа.': 'New features later. Work in progress.',
+  'Язык': 'Language',
+  'Русский': 'Russian',
+  'Закрыть': 'Close',
+  'Закрыть окно': 'Close window',
+  'Свернуть': 'Minimize',
+  'Свернуть окно': 'Minimize window',
+  'Ещё': 'More',
+  'Пусто': 'Empty',
+  'вкл': 'on',
+  'выкл': 'off',
+  'Играть': 'Play',
+  'Пауза': 'Pause',
+  'Предыдущий': 'Previous',
+  'Следующий': 'Next',
+  'Перемотка': 'Seek',
+  'Громкость': 'Volume',
+  'Играть следом': 'Play next',
+  'Добавить в очередь': 'Add to queue',
+  'Добавлено в очередь': 'Added to queue',
+  'Очередь': 'Queue',
+  'Своя очередь': 'Own queue',
+  'Очередь пуста. Запустите трек из списка.': 'Queue is empty. Start a track from the list.',
+  'Повтор выключен': 'Repeat off',
+  'Повтор: весь список': 'Repeat: whole list',
+  'Повтор: один трек': 'Repeat: one track',
+  'Перемешивание включено': 'Shuffle on',
+  'Перемешивание выключено': 'Shuffle off',
+  'Нет активного трека': 'No active track',
+  'Ничего не играет': 'Nothing playing',
+  'Локальный файл': 'Local file',
+  'Неизвестный исполнитель': 'Unknown artist',
+
+  // —— Плеер ——
+  'Все песни': 'All songs',
+  'Внешние': 'External',
+  'Внешние источники': 'External sources',
+  'Внешние источники скоро появятся': 'External sources are coming soon',
+  'Локальная библиотека': 'Local library',
+  'Локальные треки появятся здесь': 'Local tracks will appear here',
+  'Новый плейлист': 'New playlist',
+  '+ Новый плейлист': '+ New playlist',
+  'Плейлист': 'Playlist',
+  'Плейлист пуст. Добавляйте треки через «⋯» в разделе «Все песни».': 'Playlist is empty. Add tracks via “⋯” in “All songs”.',
+  'Плейлистов пока нет. Создайте плейлист на вкладке «Плеер» или на странице «Плейлисты».': 'No playlists yet. Create one on the “Player” tab or the “Playlists” page.',
+  'У вас пока нет плейлистов': 'You have no playlists yet',
+  'Создать первый': 'Create the first one',
+  'Переименовать': 'Rename',
+  'Удалить плейлист': 'Delete playlist',
+  'Удалить трек': 'Delete track',
+  'Убрать': 'Remove',
+  'Убрать из плейлиста': 'Remove from playlist',
+  'Точно удалить?': 'Delete for sure?',
+  'Точно?': 'Sure?',
+  'Добавить файлы': 'Add files',
+  'Добавить папку': 'Add folder',
+  'Сканирование...': 'Scanning...',
+  'Поиск по названию, артисту...': 'Search by title, artist...',
+  'Результаты поиска': 'Search results',
+  'Ничего не найдено по запросу': 'Nothing found for query',
+  'Поддерживаемых аудиофайлов не найдено': 'No supported audio files found',
+  'Эти треки уже есть в списке': 'These tracks are already in the list',
+  'Добавлено': 'Added',
+  'Добавлено треков: {0}': 'Tracks added: {0}',
+  'Добавлено в «{0}»': 'Added to “{0}”',
+  'Уже в «{0}»': 'Already in “{0}”',
+  'Не удалось добавить файлы': 'Failed to add files',
+  'Ошибка при добавлении папки:': 'Error adding folder:',
+  'Ошибка при добавлении перетащенных файлов:': 'Error adding dropped files:',
+  'Не удалось загрузить плейлисты:': 'Failed to load playlists:',
+  'Не удалось сохранить плейлисты:': 'Failed to save playlists:',
+  'Не удалось сохранить треки:': 'Failed to save tracks:',
+
+  // —— Плейлисты ——
+  'Отпустите, чтобы добавить': 'Drop to add',
+  'Аудиофайлы или папки с музыкой': 'Audio files or folders with music',
+
+  // —— Статистика ——
+  'Всего прослушано': 'Listened in total',
+  'С последнего запуска': 'Since last launch',
+  'Общая длительность музыки': 'Total music duration',
+  'Топ-10 треков': 'Top-10 tracks',
+  'Топ-10 плейлистов': 'Top-10 playlists',
+  'По времени': 'By time',
+  'По числу прослушиваний': 'By play count',
+  'Статистика ведётся с': 'Statistics since',
+  'Пока пусто — включите что-нибудь, и здесь появится рейтинг.': 'Nothing here yet — play something and the rating will appear.',
+  'Плейлисты считаются, когда трек запущен из плейлиста.': 'Playlists count when a track is started from a playlist.',
+  'Сбросить статистику': 'Reset statistics',
+  'Нажмите ещё раз для сброса': 'Click again to reset',
+  'удалён': 'removed',
+  'приложения': '',
+  'в библиотеке': 'in the library',
+  'запуск': 'launch',
+  'запуска': 'launches',
+  'запусков': 'launches',
+  'прослушивание': 'play',
+  'прослушивания': 'plays',
+  'прослушиваний': 'plays',
+  'раз': 'time',
+  'раза': 'times',
+  'трек': 'track',
+  'трека': 'tracks',
+  'треков': 'tracks',
+  '{0} д {1} ч {2} мин': '{0} d {1} h {2} m',
+  '{0} ч {1} мин': '{0} h {1} m',
+  '{0} мин {1} с': '{0} min {1} s',
+  '{0} мин': '{0} min',
+  '{0} с': '{0} s',
+
+  // —— Настройки ——
+  'Основные': 'General',
+  'Большой экран': 'Big screen',
+  'Тема': 'Theme',
+  'Тёмная': 'Dark',
+  'Светлая': 'Light',
+  'Неоновая обводка экрана': 'Neon screen outline',
+  'Круглый': 'Round',
+  'Дизайн': 'Design',
+  'Обычный': 'Default',
+  'Glassmorphism+ — монолитный основной фон и стеклянные панели.': 'Glassmorphism+ — a single solid background with glassy panels.',
+  'Фон': 'Background',
+  'Количество точек': 'Number of particles',
+  'Количество пузырей': 'Number of bubbles',
+  'Скорость': 'Speed',
+  'Плотность символов': 'Character density',
+  'Количество туманностей': 'Number of nebulae',
+  'Палитра': 'Palette',
+  'Базовая': 'Default',
+  'Своя': 'Custom',
+  'Accent цвет': 'Accent color',
+  'Громкость по умолчанию': 'Default volume',
+  'Восстанавливать последний трек при запуске': 'Restore last track on startup',
+  'Кроссфейд': 'Crossfade',
+  'Плавный переход между треками': 'Smooth transition between tracks',
+  'Кроссфейд при переключении треков': 'Crossfade between tracks',
+  'Длительность перехода': 'Crossfade duration',
+  'Старый трек плавно затухает, новый плавно вступает — при автоматическом переходе к следующему треку и в конце очереди (затихание). Любые ручные переключения — всегда мгновенные.': 'The old track fades out while the new one fades in — on auto-advance and at the end of the queue (fade-out). Any manual switch is always instant.',
+  'Плавный переход на автопереходе, «играть следом», плейлисты': 'Crossfade on auto-advance, “play next” and playlists',
+  'Кроссфейд: не удалось запустить новый трек, откат:': 'Crossfade: failed to start the new track, rolled back:',
+  'Данные': 'Data',
+  'Папка сохранения': 'Storage folder',
+  'Открыть папку': 'Open folder',
+  'Очистить список треков': 'Clear track list',
+  'Очистка...': 'Clearing...',
+  'Сбросить настройки': 'Reset settings',
+  'Система': 'System',
+  'Не удалось открыть папку:': 'Failed to open folder:',
+  'Не удалось очистить треки:': 'Failed to clear tracks:',
+  'Не удалось сбросить настройки:': 'Failed to reset settings:',
+  'Не удалось сохранить настройки:': 'Failed to save settings:',
+  'Адаптивный фон': 'Adaptive background',
+  'Подстраивать фон под цвет обложки': 'Match background to cover color',
+  'Работает только на большом экране (Now Playing). При включении дизайн и фоновые эффекты (Particle, Matrix и т.д.) там отключаются, а фон окрашивается в цвет обложки. Если у трека нет обложки, фон тёмный.': 'Only on the big screen (Now Playing). When enabled, design and background effects (Particle, Matrix etc.) turn off there and the background tints to the cover color. Without a cover the background is dark.',
+  'API для поиска текста': 'Lyrics API',
+  'Ссылка на API': 'API link',
+  'Поиск текста через внешний API — в процессе разработки. Поле пока недоступно.': 'Lyrics search via external API is in development. The field is disabled for now.',
+
+  // —— О приложении ——
+  'Локальный аудио-плеер · Go + Wails + Svelte': 'Local audio player · Go + Wails + Svelte',
+  'Технологии': 'Technologies',
+  'Возможности и аудио-движок': 'Features and audio engine',
+  'О системе': 'System',
+  'Платформа': 'Platform',
+  'Аудио-устройство': 'Audio device',
+  'Треков в медиатеке': 'Tracks in library',
+  'Форматы': 'Formats',
+  'FLAC, WAV, MP3, OGG, M4A и AAC — с чтением тегов и встроенных обложек': 'FLAC, WAV, MP3, OGG, M4A and AAC — with tag and embedded cover art support',
+  'Кроссфейд и очередь': 'Crossfade and queue',
+  'Скорость и тон': 'Speed and pitch',
+  'Режим Now Playing': 'Now Playing mode',
+  'Открыть режим Now Playing': 'Open Now Playing mode',
+  'Лёгкий и быстрый': 'Light and fast',
+  'Go + системный WebView: минимальное потребление памяти, без Electron': 'Go + system WebView: minimal memory use, no Electron',
+  'Реактивный интерфейс без лишних килобайт рантайма': 'Reactive UI without extra runtime kilobytes',
+  'Системный WebView вместо тяжёлого Electron': 'System WebView instead of heavy Electron',
+  'Быстрая сборка и горячая перезагрузка при разработке': 'Fast builds and hot reload during development',
+  'Бэкенд: стрим-сервер, теги, обложки и файловая система': 'Backend: streaming server, tags, covers and file system',
+  'Пресеты 0.5×–2× — вместе или независимо, как у пластинки': 'Presets 0.5×–2× — together or independently, like a record',
+  'Связаны: меняются вместе, как у пластинки — тон растёт и падает вместе со скоростью.': 'Linked: change together, like a record — pitch rises and falls with speed.',
+  'Раздельно: скорость меняется без изменения тона, а тон — без изменения скорости.': 'Separate: speed changes without altering pitch, and pitch without altering speed.',
+  'Связаны: меняются вместе. Нажмите, чтобы разделить': 'Linked: change together. Click to unlink',
+  'Раздельно. Нажмите, чтобы связать': 'Separate. Click to link',
+  'Сбрасывается при перезапуске.': 'Resets on restart.',
+  'Текст': 'Lyrics',
+  'Текст для этого трека не найден.': 'No lyrics found for this track.',
+  'Текст трека появится здесь, когда будет подключён API для поиска текстов.': 'Lyrics will appear here once a lyrics API is connected.',
+  'Укажите ссылку на API в настройках, чтобы искать текст.': 'Set the API link in settings to search for lyrics.',
+  'Не удалось загрузить текст.': 'Failed to load lyrics.',
+  'Эквалайзер': 'Equalizer',
+  'в разработке': 'in development',
+  'Визуализатор': 'Visualizer',
+  'Количество колонок': 'Number of bars',
+  '↻ Вращение по часовой:': '↻ Clockwise:',
+  '🔗 Связаны': '🔗 Linked',
+  '⛓ Раздельно': '⛓ Separate',
+
+  // —— Фоновые эффекты (подсказки) ——
+  'None — без фонового эффекта: чистый фон выбранной темы. Меньше всего нагружает компьютер.': 'None — no background effect: a clean background in the selected theme. Lightest on your computer.',
+  'Particle («частицы») — плавающие точки в цвет акцента, которые соединяются линиями, когда оказываются рядом. «Количество точек» — сколько частиц на экране: чем их больше, тем гуще сеть линий и выше нагрузка.': 'Particle — floating dots in the accent color that connect with lines when they come close. “Number of particles” — how many dots on screen: more dots mean a denser web of lines and higher load.',
+  'Babble (от bubble — «пузыри») — большие светящиеся цветные пузыри, которые медленно дрейфуют по экрану и плавно меняют оттенок. «Количество пузырей» — сколько их одновременно: больше пузырей — ярче и насыщеннее фон.': 'Babble — large glowing colored bubbles that slowly drift across the screen and smoothly change hue. “Number of bubbles” — how many at once: more bubbles make the background brighter and richer.',
+  'Matrix («цифровой дождь») — падающие колонки символов, как в фильме «Матрица». «Скорость» — как быстро символы падают вниз. «Плотность символов» — доля колонок экрана, в которых идёт дождь: меньше — реже и спокойнее.': 'Matrix (“digital rain”) — falling columns of characters, like in The Matrix. “Speed” — how fast characters fall. “Character density” — share of screen columns with rain: fewer means rarer and calmer.',
+  'Aurora («северное сияние») — мягкие светящиеся туманности, которые плавно плывут и переливаются разными цветами. «Количество туманностей» — сколько облаков одновременно: больше — богаче и ярче переливы.': 'Aurora (“northern lights”) — soft glowing nebulae drifting across the screen and smoothly shifting colors. “Number of nebulae” — how many clouds at once: more means richer, brighter shimmering.',
+
+  // —— Служебные сообщения ——
+  'AudioContext недоступен': 'AudioContext unavailable',
+  'AudioWorklet недоступен': 'AudioWorklet unavailable',
+  'Web Audio недоступен:': 'Web Audio unavailable:',
+  'OnFileDrop недоступен:': 'OnFileDrop unavailable:',
+  'Сдвиг тона недоступен:': 'Pitch shift unavailable:',
+
+  // —— Добор ——
+  'Стиль': 'Style',
+  'Обычная': 'Default',
+  'Хеллоуин': 'Halloween',
+  'Новый Год': 'New Year',
+  'Автоматически по праздникам': 'Automatic holiday switching',
+  'Авто: 28–31 октября — Хеллоуин, 24 декабря — 10 января — Новый Год. Ручной выбор автоматически выключает автосмену.':
+    'Auto: Oct 28–31 — Halloween, Dec 24 – Jan 10 — New Year. Picking a style manually turns auto-switching off.',
+  'Большой': 'Big',
+  'Будет играть следом': 'Will play next',
+  'В плейлисте пока нет треков.': 'This playlist has no tracks yet.',
+  'Изменено': 'Changed',
+  'Исправлено': 'Fixed',
+  'Источник:': 'Source:',
+  'Тон': 'Pitch',
+};
+
+function lookup(key) {
+  const l = get(locale);
+  if (l === 'en' && EN[key] !== undefined) return EN[key];
+  return key;
+}
+
+/** Перевод для скрипта: tr('Добавлено') */
+export function tr(key) {
+  return lookup(key);
+}
+
+/** Перевод для шаблона: tt('Добавлено') (t зарезервирован Svelte-переменными) */
+export function tt(key) {
+  return lookup(key);
+}
+
+/** Подстановка {0}, {1}… в переведённую строку */
+export function fmt(str, ...args) {
+  return String(str).replace(/\{(\d+)\}/g, (_, i) =>
+    args[+i] !== undefined ? String(args[+i]) : ''
+  );
+}

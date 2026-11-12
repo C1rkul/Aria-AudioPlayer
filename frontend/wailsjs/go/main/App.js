@@ -18,6 +18,10 @@ export function GetStreamBaseURL() {
   return window['go']['main']['App']['GetStreamBaseURL']();
 }
 
+export function GetSystemInfo() {
+  return window['go']['main']['App']['GetSystemInfo']();
+}
+
 export function LoadPlaylistsData() {
   return window['go']['main']['App']['LoadPlaylistsData']();
 }

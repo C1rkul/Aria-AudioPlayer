@@ -1,4 +1,5 @@
 <script>
+  import { fmt, tr, tt } from '../lib/i18n.js';
   import { createEventDispatcher, onDestroy } from 'svelte';
   import { fade, fly, scale } from 'svelte/transition';
   import { flip } from 'svelte/animate';
@@ -31,13 +32,13 @@
   function fmtTotal(sec) {
     if (!sec) return '';
     const m = Math.round(sec / 60);
-    return m >= 60 ? `${Math.floor(m / 60)} ч ${m % 60} мин` : `${Math.max(1, m)} мин`;
+    return m >= 60 ? fmt(tt('{0} ч {1} мин'), Math.floor(m / 60), m % 60) : fmt(tt('{0} мин'), Math.max(1, m));
   }
   function plural(n) {
     const a = n % 10, b = n % 100;
-    if (a === 1 && b !== 11) return 'трек';
-    if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return 'трека';
-    return 'треков';
+    if (a === 1 && b !== 11) return tr('трек');
+    if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return tr('трека');
+    return tr('треков');
   }
 
   function open(id) {
@@ -71,15 +72,15 @@
 
 <section class="pl-page">
   <div class="head">
-    <h2>Плейлисты</h2>
-    <button class="new-btn" on:click={create}>+ Новый плейлист</button>
+    <h2>{tt('Плейлисты')}</h2>
+    <button class="new-btn" on:click={create}>{tt('+ Новый плейлист')}</button>
   </div>
 
   {#if cards.length === 0}
     <div class="empty" in:fade={{ duration: 250 }}>
       <div class="empty-icon"><NoteIcon /></div>
-      <p>У вас пока нет плейлистов</p>
-      <button class="new-btn" on:click={create}>Создать первый</button>
+      <p>{tt('У вас пока нет плейлистов')}</p>
+      <button class="new-btn" on:click={create}>{tt('Создать первый')}</button>
     </div>
   {:else}
     <div class="grid">
@@ -98,7 +99,7 @@
                 <img src={coverUrl(t.coverPath)} alt="" />
               {/each}
             {/if}
-            <button class="play" title="Играть" disabled={!card.list.length}
+            <button class="play" title="{tt('Играть')}" disabled={!card.list.length}
               on:click|stopPropagation={() => play(card)}><PlayPauseIcon /></button>
           </div>
           <div class="info">
@@ -113,9 +114,9 @@
             <div class="meta">{card.list.length} {plural(card.list.length)}{card.seconds ? ' · ' + fmtTotal(card.seconds) : ''}</div>
           </div>
           <div class="actions">
-            <button title="Переименовать" on:click|stopPropagation={() => (editingId = card.pl.id)}>✎</button>
-            <button class="del" class:armed={armedId === card.pl.id} title="Удалить плейлист"
-              on:click|stopPropagation={() => askDelete(card.pl.id)}>{armedId === card.pl.id ? 'Точно?' : '🗑'}</button>
+            <button title="{tt('Переименовать')}" on:click|stopPropagation={() => (editingId = card.pl.id)}>✎</button>
+            <button class="del" class:armed={armedId === card.pl.id} title="{tt('Удалить плейлист')}"
+              on:click|stopPropagation={() => askDelete(card.pl.id)}>{armedId === card.pl.id ? tt('Точно?') : '🗑'}</button>
           </div>
         </div>
       {/each}

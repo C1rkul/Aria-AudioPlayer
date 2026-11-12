@@ -1,4 +1,5 @@
 <script>
+  import { tt, tr, locale } from '../lib/i18n.js';
   import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -6,11 +7,27 @@
   import { APP_VERSION } from '../lib/version.js';
 
   const dispatch = createEventDispatcher();
-  const SECTIONS = [['added', 'Добавлено'], ['changed', 'Изменено'], ['fixed', 'Исправлено']];
+  const SECTIONS = [['added', tr('Добавлено')], ['changed', tr('Изменено')], ['fixed', tr('Исправлено')]];
 
   let showAll = false;
-  $: current = entries.find((e) => e.version === APP_VERSION) || entries[0];
-  $: older = entries.filter((e) => e !== current);
+
+  // Локализация записи changelog: при включённом EN берётся блок `en`,
+  // иначе — оригинал (RU). Сверка версий идёт по сырой записи.
+  function loc(e, lang) {
+    if (lang !== 'en' || !e.en) return e;
+    const en = e.en;
+    return {
+      ...e,
+      title: en.title ?? e.title,
+      added: en.added ?? e.added,
+      changed: en.changed ?? e.changed,
+      fixed: en.fixed ?? e.fixed,
+    };
+  }
+  $: rawCurrent = entries.find((e) => e.version === APP_VERSION) || entries[0];
+  $: rawOlder = entries.filter((e) => e !== rawCurrent);
+  $: current = loc(rawCurrent, $locale);
+  $: older = rawOlder.map((e) => loc(e, $locale));
 
   function close() { dispatch('close'); }
   function onKey(e) { if (e.key === 'Escape') close(); }
@@ -21,15 +38,15 @@
 <svelte:window on:keydown={onKey} />
 
 <div class="backdrop" on:click|self={close} transition:fade={{ duration: 200 }} role="presentation">
-  <div class="box" bind:this={boxEl} tabindex="-1" role="dialog" aria-modal="true" aria-label="Что нового"
+  <div class="box" bind:this={boxEl} tabindex="-1" role="dialog" aria-modal="true" aria-label="{tt('Что нового')}"
     in:scale={{ start: 0.94, duration: 260, easing: cubicOut }} out:scale={{ start: 0.96, duration: 160 }}>
     <div class="head">
       <div>
-        <div class="kicker">Что нового</div>
+        <div class="kicker">{tt('Что нового')}</div>
         <h2>Aria {current.version}</h2>
         {#if current.title}<div class="sub">{current.title}{current.date ? ' · ' + current.date : ''}</div>{/if}
       </div>
-      <button class="x" on:click={close} title="Закрыть">✕</button>
+      <button class="x" on:click={close} title="{tt('Закрыть')}">✕</button>
     </div>
 
     <div class="body">
@@ -42,7 +59,7 @@
 
       {#if older.length}
         <button class="more" on:click={() => (showAll = !showAll)}>
-          {showAll ? 'Скрыть прошлые версии' : 'Прошлые версии'} {showAll ? '▴' : '▾'}
+          {showAll ? tt('Скрыть прошлые версии') : tt('Прошлые версии')} {showAll ? '▴' : '▾'}
         </button>
         {#if showAll}
           {#each older as e (e.version)}
@@ -61,8 +78,8 @@
     </div>
 
     <div class="foot">
-      <span class="net">Автообновление по сети появится позже</span>
-      <button class="ok" on:click={close}>Понятно</button>
+      <span class="net">{tt('Автообновление по сети появится позже')}</span>
+      <button class="ok" on:click={close}>{tt('Понятно')}</button>
     </div>
   </div>
 </div>

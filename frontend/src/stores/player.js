@@ -1,3 +1,4 @@
+import { tr } from '../lib/i18n.js';
 import { writable, derived } from 'svelte/store';
 import { SaveTracks } from '../../wailsjs/go/main/App';
 
@@ -23,7 +24,7 @@ export function persistTracks(list) {
   saveTimer = setTimeout(() => {
     SaveTracks(list)
       .then(() => {})
-      .catch((err) => console.error('Не удалось сохранить треки:', err));
+      .catch((err) => console.error(tr('Не удалось сохранить треки:'), err));
   }, 500);
 }
 

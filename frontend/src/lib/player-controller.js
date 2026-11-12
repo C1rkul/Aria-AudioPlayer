@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 import { writable, get } from 'svelte/store';
 import { tracks as tracksStore, currentIndex as currentIdxStore, isPlaying as playingStore, repeatMode, shuffleEnabled, updateTrackDuration } from '../stores/player.js';
 import { getSourceProvider } from './sources/index.js';
@@ -215,7 +216,7 @@ class PlayerController {
     try {
       this._graphBuilding = true;
       const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) throw new Error('AudioContext недоступен');
+      if (!Ctx) throw new Error(tr('AudioContext недоступен'));
 
       const ctx = new Ctx();
       const srcA = ctx.createMediaElementSource(this.elA);
@@ -256,7 +257,7 @@ class PlayerController {
       if (Math.abs(ratio - 1) > 1e-6) this.ensureShifter().then(() => this.rewire(ratio));
       return true;
     } catch (e) {
-      console.warn('Web Audio недоступен:', e);
+      console.warn(tr('Web Audio недоступен:'), e);
       this._graphBuilding = false;
       return false;
     }
@@ -309,12 +310,12 @@ class PlayerController {
     if (!this.shifterLoading) {
       this.shifterLoading = (async () => {
         this.getAnalyser(); // создаёт контекст и цепочку, если их ещё нет
-        if (!this.audioCtx || !this.audioCtx.audioWorklet) throw new Error('AudioWorklet недоступен');
+        if (!this.audioCtx || !this.audioCtx.audioWorklet) throw new Error(tr('AudioWorklet недоступен'));
         const url = URL.createObjectURL(new Blob([PITCH_WORKLET], { type: 'text/javascript' }));
         await this.audioCtx.audioWorklet.addModule(url);
         URL.revokeObjectURL(url);
         this.shifter = new AudioWorkletNode(this.audioCtx, 'aria-pitch-shifter', { outputChannelCount: [2] });
-      })().catch((e) => { console.warn('Сдвиг тона недоступен:', e); this.shifterLoading = null; });
+      })().catch((e) => { console.warn(tr('Сдвиг тона недоступен:'), e); this.shifterLoading = null; });
     }
     await this.shifterLoading;
   }
@@ -427,7 +428,7 @@ class PlayerController {
       this.isLoading.set(false);
       // AbortError — быстрая смена треков, NotAllowedError — автозапуск: не фатально
       if (err && err.name === 'AbortError') return false;
-      console.warn('Кроссфейд: не удалось запустить новый трек, откат:', err);
+      console.warn(tr('Кроссфейд: не удалось запустить новый трек, откат:'), err);
       return false; // playTrack откатит состояние и переключит обычно
     }
     this.isLoading.set(false);
@@ -575,11 +576,11 @@ class PlayerController {
       // 2. Если провайдер вернул пустую строку или ошибку (например, нет streamBase),
       // используем fallback через Go (base64 data URL)
       if (!src) {
-        console.warn("Стрим недоступен, переключаемся на base64 fallback");
+        console.warn(tr("Стрим недоступен, переключаемся на base64 fallback"));
         src = await ReadFileAsDataURL(track.path);
       }
 
-      if (!src) throw new Error("Не удалось получить источник звука");
+      if (!src) throw new Error(tr("Не удалось получить источник звука"));
       if (seq !== this._playSeq) return; // за время fallback-загрузки пришёл более новый вызов
 
       // Если пользователь поставил паузу и переключил трек — новый трек тоже загружается на паузе
@@ -619,7 +620,7 @@ class PlayerController {
       // AbortError — быстрое переключение треков, NotAllowedError — автозапуск без клика: не ошибки
       if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) return;
       console.error("Playback error:", err);
-      alert("Ошибка воспроизведения: " + err.message);
+      alert(tr("Ошибка воспроизведения: ") + err.message);
     }
   }
 

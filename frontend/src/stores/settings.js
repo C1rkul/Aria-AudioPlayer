@@ -1,8 +1,12 @@
+import { tr } from '../lib/i18n.js';
 import { writable } from 'svelte/store';
 import { SaveSettings } from '../../wailsjs/go/main/App';
 
 export const defaultSettings = {
   theme: 'dark',
+  language: 'ru', // 'ru' | 'en' — язык интерфейса
+  style: 'halloween', // 'normal' | 'halloween' | 'ny' — стиль (акцент под праздник)
+  styleAuto: false,   // автосмена стиля по дате (ручной выбор снимает этот флаг)
   design: 'normal',
   background: 'none',
   palette: 'base',
@@ -43,7 +47,7 @@ export function persistSettings(value) {
         }
       })
       .catch((err) => {
-        console.error('Не удалось сохранить настройки:', err);
+        console.error(tr('Не удалось сохранить настройки:'), err);
       });
   }, 350);
 }

@@ -10,6 +10,8 @@ export function AddPaths(arg1:Array<string>):Promise<Array<main.Track>>;
 
 export function GetStreamBaseURL():Promise<string>;
 
+export function GetSystemInfo():Promise<{[key:string]: string}>;
+
 export function LoadPlaylistsData():Promise<main.PlaylistsData>;
 
 export function LoadSettings():Promise<main.Settings>;
