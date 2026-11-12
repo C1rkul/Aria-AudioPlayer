@@ -6,9 +6,11 @@
 
 Локальный аудио-плеер на Go + Wails + Svelte · A local audio player built with Go + Wails + Svelte
 
-`v0.4.2-beta`
+`v0.4.1-beta`
 
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/C1rkul/badge.svg)](https://hub.xerj.org/contributors/C1rkul)
+
+[![Telegram](https://img.shields.io/badge/Telegram-2CASE0?logo=telegram&logoColor=white)](https://t.me/aria_audio_player)
 
 </div>
 
