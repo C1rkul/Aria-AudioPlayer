@@ -10,7 +10,12 @@
 
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/C1rkul/badge.svg)](https://hub.xerj.org/contributors/C1rkul)
 
-[![Telegram](https://img.shields.io/badge/Telegram-2CASE0?logo=telegram&logoColor=white)](https://t.me/aria_audio_player)
+<p align="center">
+  <a href="https://t.me"><img src="./frontend/docs/badge-tg-ru.svg" alt="Telegram RU"></a>
+  <a href="https://t.me"><img src="./frontend/docs/badge-tg-en.svg" alt="Telegram EN"></a>
+</p>
+
+
 
 </div>
 
