@@ -1,11 +1,13 @@
-<svg xmlns="http://w3.org" width="110" height="20" role="img" aria-label="Telegram: EN">
-  <linearGradient id="s" x2="0" y2="100%">
-    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
-    <stop offset="1" stop-opacity=".1"/>
-  </linearGradient>
-  <clipPath id="r">
-    <rect width="110" height="20" rx="3" fill="#fff"/>
-  </clipPath>
+<svg xmlns="http://www.w3.org/2000/svg" width="110" height="20" role="img" aria-label="Telegram: EN">
+  <defs>
+    <linearGradient id="s" x2="0" y2="100%">
+      <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+      <stop offset="1" stop-opacity=".1"/>
+    </linearGradient>
+    <clipPath id="r">
+      <rect width="110" height="20" rx="3" fill="#fff"/>
+    </clipPath>
+  </defs>
   <g clip-path="url(#r)">
     <rect width="81" height="20" fill="#555"/>
     <rect x="81" width="29" height="20" fill="#2CA5E0"/>
