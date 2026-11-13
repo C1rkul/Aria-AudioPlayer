@@ -62,14 +62,14 @@
 
 **ГЛАВНАЯ**
 <p align="center">
-  <img src="./frontend/docs/main.png" alt="ГЛАВНАЯ" width="380">
+  <img src="./frontend/docs/main-page-RU.png" alt="ГЛАВНАЯ" width="380">
 </p>
 
 ##
 
 **СЕЙЧАС ИГРАЕТ**
 <p align="center">
-  <img src="./frontend/docs/now-playing.png" alt="СЕЙЧАС ИГРАЕТ" width="380">
+  <img src="./frontend/docs/now-playing-page-RU.png" alt="СЕЙЧАС ИГРАЕТ" width="380">
 </p>
 
 ##
@@ -188,14 +188,14 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 
 **MAIN PAGE**
 <p align="center">
-  <img src="./frontend/docs/main.png" alt="MAIN PAGE" width="380">
+  <img src="./frontend/docs/main-page-EN.png" alt="MAIN PAGE" width="380">
 </p>
 
 ##
 
 **NOW PLAYING PAGE**
 <p align="center">
-  <img src="./frontend/docs/now-playing.png" alt="NOW PLAYING" width="380">
+  <img src="./frontend/docs/now-playing-page-EN.png" alt="NOW PLAYING" width="380">
 </p>
 
 ##
