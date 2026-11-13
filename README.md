@@ -10,8 +10,7 @@
 
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/C1rkul/badge.svg)](https://hub.xerj.org/contributors/C1rkul)
 
-[![Telegram_RU](https://shields.io)](https://t.me) [![Telegram_EN](https://shields.io)](https://t.me)
-
+[![Telegram RU](./frontend/docs/badge-tg-ru.svg)](https://t.me/aria_player_ru) [![Telegram EN](./frontend/docs/badge-tg-en.svg)](https://t.me/aria_player_en)
 
 
 
