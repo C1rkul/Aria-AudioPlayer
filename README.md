@@ -10,7 +10,10 @@
 
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/C1rkul/badge.svg)](https://hub.xerj.org/contributors/C1rkul)
 
-[![Telegram RU](https://raw.githubusercontent.com/C1rkul/Aria-AudioPlayer/main/frontend/docs/tg-ru.svg)](https://t.me/aria_player_ru)
+<p align="center">
+  <a href="https://t.me/aria_player_ru"><img src="frontend/docs/tg-ru.svg" alt="Telegram RU"></a>
+  <a href="https://t.me/aria_player_en"><img src="frontend/docs/tg-en.svg" alt="Telegram EN"></a>
+</p>
 
 </div>
 
