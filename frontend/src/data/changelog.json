@@ -1,13 +1,33 @@
 {
   "entries": [
     {
+      "version": "0.4.6-beta",
+      "title": "Адаптивный фон: три режима",
+      "added": [
+        "Адаптивный фон улучшен",
+        "Добавлены новые виды адаптивного фона default/default+/spotify-like",
+        "Небольшие правки в коде"
+      ],
+      "fixed": [],
+      "en": {
+        "title": "Adaptive background: three modes",
+        "added": [
+          "Improved adaptive background",
+          "New adaptive background modes: default/default+/spotify-like",
+          "Minor code fixes"
+        ],
+        "fixed": []
+      },
+      "changed": []
+    },
+    {
       "version": "0.4.5-beta",
       "title": "Тегер: правка, диагностика, откат",
       "added": [
         "Тегер: инспектор тегов на странице плеера — правка названия, исполнителя, альбома, года, жанра и номера трека; выделение Ctrl/Shift, мультирежим (пустые поля не трогаются), атомарная запись в mp3/flac/ogg/m4a",
         "Диагностика тегов: список проблем (название = имя файла, пустой или неизвестный исполнитель, нет обложки, лишние пробелы, строчная первая буква) и авто-чинка — чистка пробелов и заглавные буквы",
         "История правок тегов (tags-history.json) с кнопкой «Откатить последнее»",
-		"Теперь кнопка «Telegram» на странице «О Программе» на русском языке ведет на ру тгк"
+        "Теперь кнопка «Telegram» на странице «О Программе» на русском языке ведет на ру тгк"
       ],
       "fixed": [],
       "en": {
@@ -16,7 +36,7 @@
           "Tagger: tag inspector on the player page — edit title, artist, album, year, genre and track number; Ctrl/Shift selection, multi mode (empty fields untouched), atomic writes to mp3/flac/ogg/m4a",
           "Tag diagnostics: issue list (title = filename, empty or unknown artist, no cover, extra spaces, lowercase first letter) and one-click fixes — space cleanup and capitalization",
           "Tag edit history (tags-history.json) with an “Undo last” button",
-		  "Now the «Telegram» button on the «About page» in the English version links to the EN Telegram channel"
+          "Now the «Telegram» button on the «About page» in the English version links to the EN Telegram channel"
         ],
         "fixed": []
       },
