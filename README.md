@@ -6,7 +6,7 @@
 
 Локальный аудио-плеер на Go + Wails + Svelte · A local audio player built with Go + Wails + Svelte
 
-`v0.4.5-beta`
+`v0.4.6-beta`
 
 [![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/C1rkul/badge.svg)](https://hub.xerj.org/contributors/C1rkul)
 
