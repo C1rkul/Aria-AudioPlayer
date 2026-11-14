@@ -9,7 +9,7 @@
   "info": {
     "companyName": "C1RKUL",
     "productName": "Aria Player",
-    "productVersion": "0.4.5",
+    "productVersion": "0.4.6",
     "copyright": "C1RKUL",
     "comments": "Local desktop audio player based on golang and wails ui"
   },

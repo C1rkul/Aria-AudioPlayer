@@ -38,6 +38,10 @@
     }
   };
   $: bgInfo = BG_INFO[$settings.background] || BG_INFO.none;
+  $: abMode = $settings.adaptiveMode || ($settings.adaptiveBackground ? 'basic' : 'off');
+  function setAbMode(m) {
+    updateSettings({ adaptiveMode: m, adaptiveBackground: m !== 'off' });
+  }
 
   let tab = 'general'; // 'general' | 'nowplaying'
 
@@ -97,21 +101,14 @@
   <div class="grid">
     <div class="card">
       <h3>{tt('Адаптивный фон')}</h3>
-      <div class="switch-row">
-        <span>{tt('Подстраивать фон под цвет обложки')}</span>
-        <label class="switch">
-          <input
-            type="checkbox"
-            role="switch"
-            aria-label="{tt('Адаптивный фон')}"
-            checked={$settings.adaptiveBackground}
-            on:change={(e) => updateSettings({ adaptiveBackground: e.currentTarget.checked })}
-          />
-          <span class="slider"></span>
-        </label>
+      <div class="button-group">
+        <button class="chip" class:active={abMode === 'off'} on:click={() => setAbMode('off')}>{tt('Выкл')}</button>
+        <button class="chip" class:active={abMode === 'basic'} on:click={() => setAbMode('basic')}>{tt('Заливка')}</button>
+        <button class="chip" class:active={abMode === 'plus'} on:click={() => setAbMode('plus')}>{tt('Базовый+')}</button>
+        <button class="chip" class:active={abMode === 'spotify'} on:click={() => setAbMode('spotify')}>Spotify-like</button>
       </div>
       <p class="hint"
-        >{tt('Работает только на большом экране (Now Playing). При включении дизайн и фоновые эффекты (Particle, Matrix и т.д.) там отключаются, а фон окрашивается в цвет обложки. Если у трека нет обложки, фон тёмный.')}
+        >{tt('Базовый — заливка цветом обложки. Базовый+ — градиент из цвета обложки с плавным переходом. Spotify-like — размытая обложка на фоне и живые эффекты в её цветах. Обложки нет — тёмный фон. Работает только на большом экране (Now Playing).')}
       </p>
     </div>
 

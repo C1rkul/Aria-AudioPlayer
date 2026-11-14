@@ -66,6 +66,7 @@ type Settings struct {
 	Background         string   `json:"background"`
 	Palette            string   `json:"palette"`
 	AdaptiveBackground bool     `json:"adaptiveBackground"`
+	AdaptiveMode        string   `json:"adaptiveMode"` // адаптивный фон: '' = legacy | off | basic | plus | spotify
 	NeonFrame          bool     `json:"neonFrame"`
 	ParticleCount      int      `json:"particleCount"`
 	BabbleCount        int      `json:"babbleCount"`

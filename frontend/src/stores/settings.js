@@ -13,6 +13,7 @@ export const defaultSettings = {
   background: 'none',
   palette: 'base',
   adaptiveBackground: false,
+  adaptiveMode: '', // '' = старые настройки (берём adaptiveBackground); иначе 'off' | 'basic' | 'plus' | 'spotify'
   neonFrame: true,
   particleCount: 60,
   babbleCount: 22,

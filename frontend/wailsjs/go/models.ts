@@ -78,6 +78,7 @@ export namespace main {
 	    background: string;
 	    palette: string;
 	    adaptiveBackground: boolean;
+	    adaptiveMode: string;
 	    neonFrame: boolean;
 	    particleCount: number;
 	    babbleCount: number;
@@ -114,6 +115,7 @@ export namespace main {
 	        this.background = source["background"];
 	        this.palette = source["palette"];
 	        this.adaptiveBackground = source["adaptiveBackground"];
+	        this.adaptiveMode = source["adaptiveMode"];
 	        this.neonFrame = source["neonFrame"];
 	        this.particleCount = source["particleCount"];
 	        this.babbleCount = source["babbleCount"];

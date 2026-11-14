@@ -198,12 +198,50 @@
 
   let coverUrl = '';
 
-  // --- Адаптивный фон: цвет берётся из обложки ---
+  // --- Адаптивный фон: три режима (заливка / базовый+ / spotify-like) ---
   const DARK_BG = '#0b0b0d';
   let adaptiveColor = DARK_BG;
+  let adaptiveVivid = '#2f5bd0'; // яркий цвет обложки — градиент и подсветка эффектов
   let colorToken = 0;
 
-  $: adaptive = !!$settings.adaptiveBackground;
+  $: abMode = $settings.adaptiveMode || ($settings.adaptiveBackground ? 'basic' : 'off');
+  $: adaptive = abMode !== 'off';
+  $: rootStyle = !adaptive
+    ? ''
+    : abMode === 'spotify'
+      ? `background-color:${DARK_BG}`
+      : abMode === 'plus'
+        ? `--ab1:${adaptiveVivid};--ab2:${adaptiveColor};background-color:${adaptiveColor}`
+        : `background-color:${adaptiveColor}`;
+
+  // Spotify-like: два слоя размытой обложки, кроссфейд при смене трека
+  let blurSlots = [{ url: '', on: false }, { url: '', on: false }];
+  let blurOn = 0;
+  let blurToken = 0;
+  $: if (abMode === 'spotify') prepBlur(coverUrl);
+
+  function prepBlur(url) {
+    const token = ++blurToken;
+    if (!url) {
+      blurSlots = [{ url: '', on: false }, { url: '', on: false }];
+      blurOn = 0;
+      return;
+    }
+    if (blurSlots[blurOn].url === url) return;
+    const nxt = blurOn === 0 ? 1 : 0;
+    let applied = false;
+    const apply = () => {
+      if (applied || token !== blurToken) return;
+      applied = true;
+      blurSlots = blurSlots.map((s, i) => (i === nxt ? { url, on: true } : { ...s, on: false }));
+      blurOn = nxt;
+    };
+    const img = new Image();
+    img.onload = apply;
+    img.onerror = apply;
+    img.src = url;
+    if (img.complete && img.naturalWidth) apply();
+  }
   // цвет считаем только когда страница уже выехала и пока не начала уезжать (при закрытии цвет «замораживается»)
   $: if (adaptive && introDone && !closing) updateAdaptiveColor(coverUrl);
 
@@ -232,9 +270,17 @@
           r += R * w; g += G * w; b += B * w; wsum += w;
         }
         r /= wsum; g /= wsum; b /= wsum;
+        const rawMax = Math.max(r, g, b, 1);
         // затемняем, чтобы белый текст оставался читаемым
-        const k = Math.min(1, 95 / Math.max(r, g, b, 1));
+        const k = Math.min(1, 95 / rawMax);
         adaptiveColor = `rgb(${Math.round(r * k)}, ${Math.round(g * k)}, ${Math.round(b * k)})`;
+        // яркий цвет: нормируем по яркости и повышаем насыщенность — для градиента/эффектов
+        const vs = 175 / rawMax;
+        const vr = Math.min(255, r * vs), vg = Math.min(255, g * vs), vb = Math.min(255, b * vs);
+        const avg = (vr + vg + vb) / 3;
+        const sat = (c) => Math.max(0, Math.min(255, Math.round(avg + (c - avg) * 1.5)));
+        const hx = (n) => n.toString(16).padStart(2, '0');
+        adaptiveVivid = `#${hx(sat(vr))}${hx(sat(vg))}${hx(sat(vb))}`;
       } catch (e) {
         adaptiveColor = DARK_BG;
       }
@@ -284,23 +330,32 @@
 <div 
   class="now-playing-overlay"
   class:adaptive
+  class:ab-plus={abMode === 'plus'}
+  class:ab-spotify={abMode === 'spotify'}
   class:closing
   bind:this={rootEl}
   on:introend={() => (introDone = true)}
   in:fly|global={{ y: 720, duration: 650, easing: cubicOut, opacity: 1 }}
-  style={adaptive ? `background-color:${adaptiveColor}` : ''}
+  style={rootStyle}
   role="dialog"
   aria-modal="true"
   aria-label="{tt('Режим Now Playing')}"
   tabindex="-1"
 >
-  {#if !adaptive}
-    <BackgroundFX active={!closing} />
+  {#if abMode === 'spotify'}
+    <div class="cover-bg" aria-hidden="true">
+      {#each blurSlots as slot, i}
+        <div class="cover-blur" class:on={slot.on} style={slot.url ? `background-image:url('${slot.url}')` : ''}></div>
+      {/each}
+    </div>
+  {/if}
+  {#if abMode === 'off' || abMode === 'spotify'}
+    <BackgroundFX active={!closing} accentOverride={abMode === 'spotify' ? adaptiveVivid : ''} />
   {/if}
   {#if vizPreset === 'big'}
     <canvas class="viz viz-big" width="800" height="400"></canvas>
   {/if}
-  <div class="np-container" class:designed={!adaptive && $settings.design !== 'normal'}>
+  <div class="np-container" class:designed={$settings.design !== 'normal'}>
     <div class="np-main">
       <div class="art-stage" class:circle={vizPreset === 'circle'}>
         {#if vizPreset === 'circle'}
@@ -536,8 +591,20 @@
     box-shadow: var(--shadow);
   }
 
-  /* Адаптивный режим: без дизайна и эффектов, поверх цвета обложки — мягкое затемнение */
-  .now-playing-overlay.adaptive { color: #fff; }
+  /* Адаптивный режим: поверх цвета обложки — мягкое затемнение; карточка и панель — как в обычном режиме */
+  .now-playing-overlay.adaptive { color: #fff; transition: background-color 0.7s ease, --ab1 0.9s ease, --ab2 0.9s ease; }
+  @property --ab1 { syntax: '<color>'; inherits: false; initial-value: #0b0b0d; }
+  @property --ab2 { syntax: '<color>'; inherits: false; initial-value: #0b0b0d; }
+  .now-playing-overlay.adaptive.ab-plus {
+    background-image: radial-gradient(135% 105% at 28% 16%, var(--ab1) 0%, var(--ab2) 66%);
+    background-size: 155% 155%;
+    animation: abDrift 17s ease-in-out infinite alternate;
+  }
+  @keyframes abDrift { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+  .cover-bg { position: absolute; inset: -10%; overflow: hidden; pointer-events: none; }
+  .cover-blur { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(64px) saturate(1.5) brightness(0.62); transform: scale(1.14); opacity: 0; transition: opacity 0.7s ease; }
+  .cover-blur.on { opacity: 1; }
+  .cover-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0.5) 100%); }
   .now-playing-overlay.adaptive::before {
     content: '';
     position: absolute;
@@ -670,8 +737,7 @@
   .pl-chips button.active { border-color: rgba(var(--accent-rgb), 0.6); background: rgba(var(--accent-rgb), 0.2); color: var(--text, #fff); }
   .lyrics-scroll pre { margin: 0; white-space: pre-wrap; font: inherit; line-height: 1.7; font-size: 16px; }
   .lyrics-empty { margin: 0; color: var(--muted, #aaa); font-size: 14px; line-height: 1.6; border: 1px dashed rgba(127,127,127,0.35); border-radius: 12px; padding: 16px; }
-  .now-playing-overlay.adaptive .np-lyrics { background: rgba(0,0,0,0.22); border-color: rgba(255,255,255,0.12); }
-  .now-playing-overlay.adaptive .lyrics-empty, .now-playing-overlay.adaptive .np-time, .now-playing-overlay.adaptive .np-vol-icon { color: rgba(255,255,255,0.7); }
+  .now-playing-overlay.adaptive .np-time, .now-playing-overlay.adaptive .np-vol-icon { color: rgba(255,255,255,0.7); }
 
   .np-controls .mode { font-size: 22px; opacity: 0.5; display: flex; position: relative; transition: opacity .25s ease, color .25s ease; }
   .np-controls .mode.on { opacity: 1; color: var(--accent, #7c5cff); }

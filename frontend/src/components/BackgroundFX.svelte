@@ -3,6 +3,7 @@
   import { settings } from '../stores/settings.js';
 
   export let active = true;
+  export let accentOverride = ''; // цвет из обложки (Spotify-like режим) — важнее палитры
   let wasActive = true;
   let canvas;
   let ctx;
@@ -37,7 +38,7 @@
   const matrixChars =
     'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF';
 
-  $: accentValue = $settings.customAccent || '#7c5cff';
+  $: accentValue = accentOverride || $settings.customAccent || '#7c5cff';
   $: if (accentValue !== accent) {
     accent = accentValue;
   }
@@ -57,7 +58,7 @@
     ctx = canvas.getContext('2d');
     currentBackground = $settings.background || 'none';
     type = currentBackground;
-    accent = $settings.customAccent || '#7c5cff';
+    accent = accentOverride || $settings.customAccent || '#7c5cff';
 
     resize();
     window.addEventListener('resize', resize);
