@@ -48,7 +48,7 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:         "Aria",
+		Title:         "Aria Player",
 		Width:         1100,
 		Height:        720,
 		DisableResize: true,

@@ -10,7 +10,7 @@
   import CoverImage from './CoverImage.svelte';
   import RepeatIcon from './RepeatIcon.svelte';
   import ShuffleIcon from './ShuffleIcon.svelte';
-  import { playerController } from '../lib/player-controller.js';
+  import { playerController, EQ_PRESETS, EQ_PRESET_LIST } from '../lib/player-controller.js';
   import { getSourceProvider } from '../lib/sources/index.js';
   import { onMount } from 'svelte';
   import { settings } from '../stores/settings.js';
@@ -57,6 +57,15 @@
   $: vizSpin = !!$settings.vizSpin;
   let rootEl;
   const EQ_BANDS = ['60', '170', '310', '600', '1k', '3k', '6k', '12k', '14k', '16k'];
+
+  // высота заполнения полосы бэнда по гейну пресета (дБ: -12…+12)
+  function barStyle(preset, i) {
+    const g = (EQ_PRESETS[preset] || EQ_PRESETS.off)[i] || 0;
+    const h = Math.min(48, (Math.abs(g) / 12) * 48);
+    if (g > 0) return `bottom:50%; height:${h}%`;
+    if (g < 0) return `top:50%; height:${h}%`;
+    return 'top:50%; height:2px; margin-top:-1px';
+  }
   $: speed = $speedStore;
   let panel = 'lyrics';
   let panelDir = 1;
@@ -435,10 +444,16 @@
                 </div>
 
                 <div class="tune-card soon">
-                  <div class="tune-head"><h3>{tt('Эквалайзер')}</h3><span class="badge">{tt('в разработке')}</span></div>
-                  <div class="eq">
-                    {#each EQ_BANDS as f}
-                      <div class="eq-band"><div class="eq-bar"><span></span></div><small>{f}</small></div>
+                  <div class="tune-head"><h3>{tt('Эквалайзер')}</h3></div>
+                  <div class="eq-presets">
+                    {#each EQ_PRESET_LIST as p}
+                      <button class="eq-chip" class:active={$settings.eqPreset === p.id}
+                              on:click={() => updateSettings({ eqPreset: p.id })}>{tt(p.ru)}</button>
+                    {/each}
+                  </div>
+                  <div class="eq" class:off={$settings.eqPreset === 'off'}>
+                    {#each EQ_BANDS as f, i}
+                      <div class="eq-band"><div class="eq-bar"><span style={barStyle($settings.eqPreset, i)}></span></div><small>{f}</small></div>
                     {/each}
                   </div>
                 </div>
@@ -639,7 +654,12 @@
   .eq { display: flex; justify-content: space-between; gap: 4px; height: 64px; }
   .eq-band { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
   .eq-bar { flex: 1; width: 4px; border-radius: 2px; background: rgba(127,127,127,0.3); position: relative; }
-  .eq-bar span { position: absolute; left: -3px; right: -3px; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px; background: rgba(127,127,127,0.7); }
+  .eq-bar span { position: absolute; left: -3px; right: -3px; border-radius: 3px; background: rgba(var(--accent-rgb), 0.85); transition: height .25s ease, top .25s ease, bottom .25s ease; }
+  .eq.off { opacity: 0.55; }
+  .eq.off .eq-bar span { background: rgba(127,127,127,0.7); }
+  .eq-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .eq-chip { padding: 4px 10px; border: 1px solid rgba(127,127,127,0.3); border-radius: 999px; background: transparent; color: var(--muted, #aaa); font-size: 12px; cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+  .eq-chip.active { border-color: rgba(var(--accent-rgb), 0.6); background: rgba(var(--accent-rgb), 0.2); color: var(--text, #fff); }
   .eq-band small { font-size: 9px; color: var(--muted, #aaa); }
   .lyrics-scroll { flex: 1; overflow-y: auto; scrollbar-width: thin; }
   .pane-sub { font-size: 12px; color: var(--muted, #aaa); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

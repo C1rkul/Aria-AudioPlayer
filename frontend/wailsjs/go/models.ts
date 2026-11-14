@@ -69,6 +69,11 @@ export namespace main {
 	
 	export class Settings {
 	    theme: string;
+	    language: string;
+	    style: string;
+	    styleAuto: boolean;
+	    localFolders: string[];
+	    eqPreset: string;
 	    design: string;
 	    background: string;
 	    palette: string;
@@ -86,6 +91,8 @@ export namespace main {
 	    lyricsApiUrl: string;
 	    customAccent: string;
 	    defaultVolume: number;
+	    crossfadeEnabled: boolean;
+	    crossfadeDuration: number;
 	    restoreLastTrack: boolean;
 	    dataFolder: string;
 	    lastTrackId: string;
@@ -98,6 +105,11 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.theme = source["theme"];
+	        this.language = source["language"];
+	        this.style = source["style"];
+	        this.styleAuto = source["styleAuto"];
+	        this.localFolders = source["localFolders"];
+	        this.eqPreset = source["eqPreset"];
 	        this.design = source["design"];
 	        this.background = source["background"];
 	        this.palette = source["palette"];
@@ -115,10 +127,127 @@ export namespace main {
 	        this.lyricsApiUrl = source["lyricsApiUrl"];
 	        this.customAccent = source["customAccent"];
 	        this.defaultVolume = source["defaultVolume"];
+	        this.crossfadeEnabled = source["crossfadeEnabled"];
+	        this.crossfadeDuration = source["crossfadeDuration"];
 	        this.restoreLastTrack = source["restoreLastTrack"];
 	        this.dataFolder = source["dataFolder"];
 	        this.lastTrackId = source["lastTrackId"];
 	        this.lastPosition = source["lastPosition"];
+	    }
+	}
+	export class TagDetails {
+	    path: string;
+	    title: string;
+	    artist: string;
+	    album: string;
+	    year: string;
+	    genre: string;
+	    track: string;
+	    writable: boolean;
+	    cover?: string;
+	    hasCover: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new TagDetails(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.title = source["title"];
+	        this.artist = source["artist"];
+	        this.album = source["album"];
+	        this.year = source["year"];
+	        this.genre = source["genre"];
+	        this.track = source["track"];
+	        this.writable = source["writable"];
+	        this.cover = source["cover"];
+	        this.hasCover = source["hasCover"];
+	    }
+	}
+	export class TagFields {
+	    title?: string;
+	    artist?: string;
+	    album?: string;
+	    year?: string;
+	    genre?: string;
+	    track?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TagFields(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.artist = source["artist"];
+	        this.album = source["album"];
+	        this.year = source["year"];
+	        this.genre = source["genre"];
+	        this.track = source["track"];
+	    }
+	}
+	export class TagEdit {
+	    path: string;
+	    fields: TagFields;
+	
+	    static createFrom(source: any = {}) {
+	        return new TagEdit(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.fields = this.convertValues(source["fields"], TagFields);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class TagIssue {
+	    trackId: string;
+	    path: string;
+	    issues: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new TagIssue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.trackId = source["trackId"];
+	        this.path = source["path"];
+	        this.issues = source["issues"];
+	    }
+	}
+	export class TagWriteError {
+	    path: string;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TagWriteError(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.error = source["error"];
 	    }
 	}
 	export class Track {
@@ -146,6 +275,38 @@ export namespace main {
 	        this.coverPath = source["coverPath"];
 	        this.duration = source["duration"];
 	    }
+	}
+	export class TagWriteResult {
+	    tracks: Track[];
+	    errors: TagWriteError[];
+	
+	    static createFrom(source: any = {}) {
+	        return new TagWriteResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.tracks = this.convertValues(source["tracks"], Track);
+	        this.errors = this.convertValues(source["errors"], TagWriteError);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

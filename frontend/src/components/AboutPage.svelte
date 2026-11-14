@@ -1,5 +1,5 @@
 <script>
-  import { tt, tr } from '../lib/i18n.js';
+  import { tt, tr, locale } from '../lib/i18n.js';
   import { onMount } from 'svelte';
   import { APP_NAME, APP_VERSION } from '../lib/version.js';
   import { settings } from '../stores/settings.js';
@@ -22,7 +22,10 @@
   import { BrowserOpenURL } from '../../wailsjs/runtime/runtime';
 
   const GITHUB = 'https://github.com/C1rkul/Aria-AudioPlayer';
-  const TELEGRAM = 'https://t.me/aria_audio_player'; // кнопка в Hero (канал приложения)
+  const TELEGRAM_RU = 'https://t.me/aria_player_ru'; // канал приложения (RU)
+  const TELEGRAM_EN = 'https://t.me/aria_player_en'; // канал приложения (EN)
+  // кнопка в Hero: ссылка меняется вместе с языком интерфейса
+  $: telegramLink = $locale === 'en' ? TELEGRAM_EN : TELEGRAM_RU;
   const AUTHOR = 'https://t.me/shpionski'; // ссылка автора в подвале страницы
 
   const STACK = [
@@ -86,7 +89,7 @@
         <p class="tagline">{tt('Локальный аудио-плеер · Go + Wails + Svelte')}</p>
         <div class="actions">
           <button class="act primary" on:click={() => open(GITHUB)}><GithubIcon />GitHub</button>
-          <button class="act" on:click={() => open(TELEGRAM)}><TelegramIcon />Telegram</button>
+          <button class="act" on:click={() => open(telegramLink)}><TelegramIcon />Telegram</button>
         </div>
       </div>
     </header>

@@ -22,6 +22,14 @@ export function GetSystemInfo() {
   return window['go']['main']['App']['GetSystemInfo']();
 }
 
+export function GetTagDetails(arg1) {
+  return window['go']['main']['App']['GetTagDetails'](arg1);
+}
+
+export function GetWatchFolders() {
+  return window['go']['main']['App']['GetWatchFolders']();
+}
+
 export function LoadPlaylistsData() {
   return window['go']['main']['App']['LoadPlaylistsData']();
 }
@@ -46,8 +54,20 @@ export function OpenLocalFolderDialog() {
   return window['go']['main']['App']['OpenLocalFolderDialog']();
 }
 
+export function PickCoverImage() {
+  return window['go']['main']['App']['PickCoverImage']();
+}
+
 export function ReadFileAsDataURL(arg1) {
   return window['go']['main']['App']['ReadFileAsDataURL'](arg1);
+}
+
+export function RemoveLocalFolder(arg1, arg2) {
+  return window['go']['main']['App']['RemoveLocalFolder'](arg1, arg2);
+}
+
+export function RescanWatchedFolders(arg1) {
+  return window['go']['main']['App']['RescanWatchedFolders'](arg1);
 }
 
 export function SavePlaylistsData(arg1) {
@@ -60,4 +80,24 @@ export function SaveSettings(arg1) {
 
 export function SaveTracks(arg1) {
   return window['go']['main']['App']['SaveTracks'](arg1);
+}
+
+export function SetTrackCover(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['SetTrackCover'](arg1, arg2, arg3, arg4);
+}
+
+export function StartWatch() {
+  return window['go']['main']['App']['StartWatch']();
+}
+
+export function TagDiagnostics(arg1) {
+  return window['go']['main']['App']['TagDiagnostics'](arg1);
+}
+
+export function UndoLastTags(arg1) {
+  return window['go']['main']['App']['UndoLastTags'](arg1);
+}
+
+export function WriteTags(arg1, arg2) {
+  return window['go']['main']['App']['WriteTags'](arg1, arg2);
 }

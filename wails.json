@@ -1,15 +1,15 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
   "name": "Aria-Audio-Player",
-  "outputfilename": "Aria-Audio-Player",
+  "outputfilename": "Aria-Player",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "info": {
     "companyName": "C1RKUL",
-    "productName": "Aria",
-    "productVersion": "0.4.1",
+    "productName": "Aria Player",
+    "productVersion": "0.4.5",
     "copyright": "C1RKUL",
     "comments": "Local desktop audio player based on golang and wails ui"
   },

@@ -1,5 +1,6 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import { get } from 'svelte/store';
   
   // Компоненты страниц
   import PlayerPage from './components/PlayerPage.svelte';
@@ -38,7 +39,10 @@
   import { playerController } from './lib/player-controller.js';
 
   // Wails Bindings
-  import { LoadTracks, LoadSettings, GetStreamBaseURL } from '../wailsjs/go/main/App';
+  import { LoadTracks, LoadSettings, GetStreamBaseURL, RescanWatchedFolders } from '../wailsjs/go/main/App';
+  import { EventsOn } from '../wailsjs/runtime/runtime.js';
+  import { installHotkeys } from './lib/hotkeys.js';
+  import { applyLibraryList } from './lib/library-sync.js';
   import { fmt, locale, tr, tt } from './lib/i18n.js';
   import { accentFor } from './lib/holiday.js';
 
@@ -129,6 +133,18 @@
       tracks.set(Array.isArray(savedTracks) ? savedTracks : []);
       await loadPlaylists();
 
+      // 4. Мониторинг папок: изменения на диске пересобирают библиотеку
+      EventsOn('library:changed', async () => {
+        try {
+          const list = await RescanWatchedFolders(get(tracks));
+          applyLibraryList(Array.isArray(list) ? list : []);
+        } catch (err) {
+          console.error(tr('Не удалось пересобрать библиотеку:'), err);
+        }
+      });
+      // Горячие клавиши: пробел, Ctrl+стрелки, медиа-клавиши
+      installHotkeys();
+
       // Subscribe to controller states to sync UI
       playerController.currentTime.subscribe(v => currentTime = v);
       playerController.duration.subscribe(v => duration = v);
@@ -152,6 +168,8 @@
 
   // Тема / дизайн / палитра применяются при ЛЮБОМ изменении настроек
   $: if (appearanceReady) applyAppearanceSmooth($settings);
+  // Эквалайзер: пресет применяется и при смене в настройках, и после сборки аудио-графа
+  $: if (appearanceReady) playerController.applyEq($settings.eqPreset);
 
   $: {
     clearTimeout(bgTimer);
@@ -292,7 +310,7 @@
   <!-- Пустой верхний ряд (40px) — резерв под слой окна; сам слой живёт ниже, вне inert -->
   <aside class="sidebar">
     <div class="logo-block">
-      <div class="logo"><AriaMark size={30} glow={false} /><span class="logo-rest">ria</span></div>
+      <div class="logo"><AriaMark size={30} glow={false} /><span class="logo-rest">ria Player</span></div>
       <div class="app-version">v{APP_VERSION}</div>
     </div>
     <nav class="nav" bind:this={navEl}>
@@ -444,7 +462,7 @@
   @keyframes dropBob { from { transform: translateY(-4px); } to { transform: translateY(5px); } }
   .drop-title { font-size:20px; font-weight:700; margin-top:6px; }
   .drop-sub { font-size:13px; color:var(--muted); margin-top:4px; }
-  .toast { position:fixed; left:50%; bottom:110px; transform:translateX(-50%); z-index:2500; padding:10px 18px; border-radius:999px;
+  .toast { position:fixed; left:50%; top:18px; transform:translateX(-50%); z-index:4000; padding:10px 18px; border-radius:999px;
     background: var(--panel-bg, #1b1b21); border:1px solid rgba(var(--accent-rgb),0.45); color:var(--text); font-size:14px;
     box-shadow: 0 8px 28px rgba(0,0,0,0.35); -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur)); pointer-events:none; }
   .layout { position:relative; z-index:1; width:100vw; height:100vh; display:grid; grid-template-columns:230px 1fr; grid-template-rows:40px 1fr 90px; }

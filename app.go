@@ -56,33 +56,35 @@ type PlaylistsData struct {
 }
 
 type Settings struct {
-	Theme              string  `json:"theme"`
-	Language           string  `json:"language"`  // интерфейс: ru | en
-	Style              string  `json:"style"`     // стиль: normal | halloween | ny
-	StyleAuto          bool    `json:"styleAuto"` // автосмена стиля по праздникам
-	Design             string  `json:"design"`
-	Background         string  `json:"background"`
-	Palette            string  `json:"palette"`
-	AdaptiveBackground bool    `json:"adaptiveBackground"`
-	NeonFrame          bool    `json:"neonFrame"`
-	ParticleCount      int     `json:"particleCount"`
-	BabbleCount        int     `json:"babbleCount"`
-	MatrixSpeed        float64 `json:"matrixSpeed"`
-	MatrixDensity      int     `json:"matrixDensity"`
-	AuroraCount        int     `json:"auroraCount"`
-	VizPreset          string  `json:"vizPreset"`
-	VizBars            int     `json:"vizBars"`
-	VizSpin            bool    `json:"vizSpin"`
-	LastSeenVersion    string  `json:"lastSeenVersion"`
-	LyricsAPIURL       string  `json:"lyricsApiUrl"`
-	CustomAccent       string  `json:"customAccent"`
-	DefaultVolume      float64 `json:"defaultVolume"`
-	CrossfadeEnabled   bool    `json:"crossfadeEnabled"`
-	CrossfadeDuration  float64 `json:"crossfadeDuration"` // секунды: длительность плавного перехода
-	RestoreLastTrack   bool    `json:"restoreLastTrack"`
-	DataFolder         string  `json:"dataFolder"`
-	LastTrackID        string  `json:"lastTrackId"`
-	LastPosition       float64 `json:"lastPosition"`
+	Theme              string   `json:"theme"`
+	Language           string   `json:"language"`     // интерфейс: ru | en
+	Style              string   `json:"style"`        // стиль: normal | halloween | ny
+	StyleAuto          bool     `json:"styleAuto"`    // автосмена стиля по праздникам
+	LocalFolders       []string `json:"localFolders"` // папки библиотеки под мониторингом
+	EqPreset           string   `json:"eqPreset"`     // пресет эквалайзера: off|flat|rock|pop|bass|jazz
+	Design             string   `json:"design"`
+	Background         string   `json:"background"`
+	Palette            string   `json:"palette"`
+	AdaptiveBackground bool     `json:"adaptiveBackground"`
+	NeonFrame          bool     `json:"neonFrame"`
+	ParticleCount      int      `json:"particleCount"`
+	BabbleCount        int      `json:"babbleCount"`
+	MatrixSpeed        float64  `json:"matrixSpeed"`
+	MatrixDensity      int      `json:"matrixDensity"`
+	AuroraCount        int      `json:"auroraCount"`
+	VizPreset          string   `json:"vizPreset"`
+	VizBars            int      `json:"vizBars"`
+	VizSpin            bool     `json:"vizSpin"`
+	LastSeenVersion    string   `json:"lastSeenVersion"`
+	LyricsAPIURL       string   `json:"lyricsApiUrl"`
+	CustomAccent       string   `json:"customAccent"`
+	DefaultVolume      float64  `json:"defaultVolume"`
+	CrossfadeEnabled   bool     `json:"crossfadeEnabled"`
+	CrossfadeDuration  float64  `json:"crossfadeDuration"` // секунды: длительность плавного перехода
+	RestoreLastTrack   bool     `json:"restoreLastTrack"`
+	DataFolder         string   `json:"dataFolder"`
+	LastTrackID        string   `json:"lastTrackId"`
+	LastPosition       float64  `json:"lastPosition"`
 }
 
 type App struct {
@@ -113,6 +115,7 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	_ = a.loadSettingsInternal()
 	a.ensureStreamServer()
+	_ = a.StartWatch() // мониторинг папок библиотеки
 }
 
 func generateID() string {
@@ -142,6 +145,8 @@ func defaultSettings() Settings {
 		Language:          "ru",
 		Style:             "halloween",
 		StyleAuto:         false,
+		LocalFolders:      []string{},
+		EqPreset:          "off",
 		Design:            "normal",
 		Background:        "none",
 		Palette:           "base",
@@ -204,6 +209,12 @@ func normalizeSettings(s *Settings) {
 	}
 	if s.Style != "normal" && s.Style != "halloween" && s.Style != "ny" {
 		s.Style = "halloween"
+	}
+	if s.EqPreset != "off" && s.EqPreset != "flat" && s.EqPreset != "rock" && s.EqPreset != "pop" && s.EqPreset != "bass" && s.EqPreset != "jazz" {
+		s.EqPreset = "off"
+	}
+	if s.LocalFolders == nil {
+		s.LocalFolders = []string{}
 	}
 	if s.DefaultVolume < 0 || s.DefaultVolume > 1 {
 		s.DefaultVolume = 0.5
@@ -318,6 +329,9 @@ func (a *App) LoadSettings() (Settings, error) {
 }
 
 func (a *App) SaveSettings(s Settings) (Settings, error) {
+	// Подключённые папки меняются только через Add/RemoveLocalFolder: копия у
+	// фронта устаревает при старте и любое сохранение настроек затирало список.
+	s.LocalFolders = a.settings.LocalFolders
 	normalizeSettings(&s)
 	a.settings = s
 	if err := a.saveSettingsInternal(s); err != nil {
@@ -460,6 +474,22 @@ func (a *App) AddLocalFolder(folderPath string) ([]Track, error) {
 
 	fmt.Printf("🔍 Сканирование папки: %s\n", folderPath)
 	tracks := a.scanDirectoryForTracks(folderPath)
+
+	// запомнить папку для мониторинга — в список попадает только то, что
+	// пользователь явно добавил (видно в шестерёнке рядом с кнопкой)
+	clean := filepath.Clean(folderPath)
+	dup := false
+	for _, p := range a.settings.LocalFolders {
+		if filepath.Clean(p) == clean {
+			dup = true
+			break
+		}
+	}
+	if !dup {
+		a.settings.LocalFolders = append(a.settings.LocalFolders, clean)
+	}
+	_ = a.saveSettingsInternal(a.settings)
+	_ = a.StartWatch()
 
 	fmt.Printf("🏷️ Найдено треков в папке: %d\n", len(tracks))
 	return tracks, nil

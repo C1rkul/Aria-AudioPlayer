@@ -43,7 +43,7 @@
     <div class="head">
       <div>
         <div class="kicker">{tt('Что нового')}</div>
-        <h2>Aria {current.version}</h2>
+        <h2>Aria Player {current.version}</h2>
         {#if current.title}<div class="sub">{current.title}{current.date ? ' · ' + current.date : ''}</div>{/if}
       </div>
       <button class="x" on:click={close} title="{tt('Закрыть')}">✕</button>

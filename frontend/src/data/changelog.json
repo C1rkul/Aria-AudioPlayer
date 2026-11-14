@@ -1,12 +1,77 @@
 {
   "entries": [
     {
+      "version": "0.4.5-beta",
+      "title": "Тегер: правка, диагностика, откат",
+      "added": [
+        "Тегер: инспектор тегов на странице плеера — правка названия, исполнителя, альбома, года, жанра и номера трека; выделение Ctrl/Shift, мультирежим (пустые поля не трогаются), атомарная запись в mp3/flac/ogg/m4a",
+        "Диагностика тегов: список проблем (название = имя файла, пустой или неизвестный исполнитель, нет обложки, лишние пробелы, строчная первая буква) и авто-чинка — чистка пробелов и заглавные буквы",
+        "История правок тегов (tags-history.json) с кнопкой «Откатить последнее»",
+		"Теперь кнопка «Telegram» на странице «О Программе» на русском языке ведет на ру тгк"
+      ],
+      "fixed": [],
+      "en": {
+        "title": "Tagger: edit, diagnose, revert",
+        "added": [
+          "Tagger: tag inspector on the player page — edit title, artist, album, year, genre and track number; Ctrl/Shift selection, multi mode (empty fields untouched), atomic writes to mp3/flac/ogg/m4a",
+          "Tag diagnostics: issue list (title = filename, empty or unknown artist, no cover, extra spaces, lowercase first letter) and one-click fixes — space cleanup and capitalization",
+          "Tag edit history (tags-history.json) with an “Undo last” button",
+		  "Now the «Telegram» button on the «About page» in the English version links to the EN Telegram channel"
+        ],
+        "fixed": []
+      },
+      "changed": []
+    },
+    {
+      "version": "0.4.3-beta",
+      "title": "Бинды и мониторинг папок",
+      "added": [
+        "Горячие клавиши: пробел — пуск/пауза, Ctrl+←/→ — треки, Ctrl+↑/↓ — громкость; медиа-кнопки ОС (MediaSession) работают всегда",
+        "Мониторинг папок: изменения библиотеки на диске подхватываются автоматически — новые треки добавляются, пропавшие удаляются",
+        "Список подключённых папок в шестерёнке рядом с «Добавить папку»: видно, что подтягивается; удаление — с подтверждением и уведомлением, треки папки удаляются вместе с ней"
+      ],
+      "fixed": [],
+      "en": {
+        "title": "Hotkeys and folder monitoring",
+        "added": [
+          "Keyboard hotkeys: Space — play/pause, Ctrl+←/→ — tracks, Ctrl+↑/↓ — volume; OS media keys (MediaSession) always work",
+          "Folder monitoring: library changes on disk are picked up automatically — new tracks are added, missing ones are removed",
+          "Connected folders list behind the gear next to “Add folder”: see what is being pulled; deletion asks for confirmation with a notice and removes the folder’s tracks along with it"
+        ],
+        "fixed": []
+      },
+      "changed": []
+    },
+    {
+      "version": "0.4.2-beta",
+      "title": "Эквалайзер и связка тона со скоростью",
+      "added": [
+        "Эквалайзер с пресетами (Выкл/Плоский/Рок/Поп/Бас/Джazz) на большой странице воспроизведения",
+        "Обновлён README и скрины интерфейса"
+      ],
+      "fixed": [],
+      "en": {
+        "title": "Equalizer and tone/speed link",
+        "added": [
+          "Parametric equalizer presets (Off/Flat/Rock/Pop/Bass/Jazz) on the big Now Playing page",
+          "Refreshed README and interface screenshots"
+        ],
+        "fixed": [],
+        "changed": [
+          "Tone and speed sync is now enabled by default"
+        ]
+      },
+      "changed": [
+        "Синхронизация тона и скорости включена по умолчанию"
+      ]
+    },
+    {
       "version": "0.4.1-beta",
       "title": "Стиль по праздникам и переводы",
       "added": [
         "Автоматический акцент оформления и бейдж издания на странице «О программе» — по активному стилю",
         "Стиль: смена темы под праздник — Хеллоуин, Новый Год или обычная; вручную или автоматически по дате (ручной выбор сам выключает автосмену)",
-		"Незначительные изменения в коде."
+        "Незначительные изменения в коде."
       ],
       "fixed": [],
       "en": {
@@ -14,9 +79,8 @@
         "added": [
           "Automatic design accent and publication badge on the “About the Program” page — according to the active style",
           "Style: holiday theming — Halloween, New Year or regular; manual or automatic by date (a manual pick turns auto-switching off by itself)",
-		  "Minor updates in code."
+          "Minor updates in code."
         ],
-
         "fixed": []
       }
     },

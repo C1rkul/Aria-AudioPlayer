@@ -7,6 +7,8 @@ export const defaultSettings = {
   language: 'ru', // 'ru' | 'en' — язык интерфейса
   style: 'halloween', // 'normal' | 'halloween' | 'ny' — стиль (акцент под праздник)
   styleAuto: false,   // автосмена стиля по дате (ручной выбор снимает этот флаг)
+  eqPreset: 'off',    // пресет эквалайзера: off | flat | rock | pop | bass | jazz
+  localFolders: [],   // папки библиотеки под мониторингом (заполняется при добавлении папки)
   design: 'normal',
   background: 'none',
   palette: 'base',

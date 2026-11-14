@@ -337,6 +337,8 @@
         value={Math.round($volumeStore * 100)} format={(v) => v + '%'}
         on:change={(e) => playerController.setVolume(e.detail / 100)} />
 
+      <p class="hotkeys-hint">{tt('Горячие клавиши: Пробел — пуск/пауза, Ctrl+←/→ — треки, Ctrl+↑/↓ — громкость; медиа-кнопки ОС работают всегда')}</p>
+
       <div class="switch-row restore-row">
         <span>{tt('Восстанавливать последний трек при запуске')}</span>
         <label class="switch">
@@ -617,4 +619,5 @@
     color: var(--muted);
     font-size: 14px;
   }
+  .hotkeys-hint { font-size: 12px; line-height: 1.5; color: var(--muted, #aaa); margin: 6px 0 12px; }
 </style>

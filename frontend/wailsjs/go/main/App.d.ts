@@ -10,7 +10,11 @@ export function AddPaths(arg1:Array<string>):Promise<Array<main.Track>>;
 
 export function GetStreamBaseURL():Promise<string>;
 
-export function GetSystemInfo():Promise<{[key:string]: string}>;
+export function GetSystemInfo():Promise<Record<string, string>>;
+
+export function GetTagDetails(arg1:string):Promise<main.TagDetails>;
+
+export function GetWatchFolders():Promise<Array<string>>;
 
 export function LoadPlaylistsData():Promise<main.PlaylistsData>;
 
@@ -24,10 +28,26 @@ export function OpenLocalFiles():Promise<Array<string>>;
 
 export function OpenLocalFolderDialog():Promise<string>;
 
+export function PickCoverImage():Promise<string>;
+
 export function ReadFileAsDataURL(arg1:string):Promise<string>;
+
+export function RemoveLocalFolder(arg1:string,arg2:Array<main.Track>):Promise<Array<main.Track>>;
+
+export function RescanWatchedFolders(arg1:Array<main.Track>):Promise<Array<main.Track>>;
 
 export function SavePlaylistsData(arg1:main.PlaylistsData):Promise<void>;
 
 export function SaveSettings(arg1:main.Settings):Promise<main.Settings>;
 
 export function SaveTracks(arg1:Array<main.Track>):Promise<void>;
+
+export function SetTrackCover(arg1:string,arg2:boolean,arg3:string,arg4:Array<main.Track>):Promise<main.TagWriteResult>;
+
+export function StartWatch():Promise<void>;
+
+export function TagDiagnostics(arg1:Array<main.Track>):Promise<Array<main.TagIssue>>;
+
+export function UndoLastTags(arg1:Array<main.Track>):Promise<main.TagWriteResult>;
+
+export function WriteTags(arg1:Array<main.TagEdit>,arg2:Array<main.Track>):Promise<main.TagWriteResult>;

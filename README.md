@@ -1,6 +1,6 @@
 <div align="center">
 
-# Aria — Audio Player
+# Aria Player
 
 **🇷🇺 [Русский](#-русский) · 🇬🇧 [English](#-english)**
 
@@ -24,7 +24,7 @@
 
 ## О проекте
 
-**Aria** — десктопный плеер для локальной музыки. Бэкенд написан на Go, интерфейс на Svelte, всё упаковано в Wails v2 (системный WebView вместо Electron, поэтому приложение лёгкое). Проект в стадии беты: основные функции работают, часть возможностей помечена как «в разработке».
+**Aria Player** — десктопный плеер для локальной музыки. Бэкенд написан на Go, интерфейс на Svelte, всё упаковано в Wails v2 (системный WebView вместо Electron, поэтому приложение лёгкое). Проект в стадии беты: основные функции работают, часть возможностей помечена как «в разработке».
 
 ## Возможности
 
@@ -80,7 +80,7 @@
 ## Установка
 
 ### Готовая сборка
-Скачайте `Aria-AudioPlayer.exe` из раздела [Releases](../../releases) и запустите. Установка не требуется. Для работы нужен Microsoft WebView2 (есть в Windows 10/11 из коробки или ставится вместе с Edge).
+Скачайте `Aria-Player.exe` из раздела [Releases](../../releases) и запустите. Установка не требуется. Для работы нужен Microsoft WebView2 (есть в Windows 10/11 из коробки или ставится вместе с Edge).
 
 ### Сборка из исходников
 Понадобятся:
@@ -94,7 +94,7 @@ cd Aria-AudioPlayer
 cd frontend && npm install && cd ..
 
 wails dev      # режим разработки с горячей перезагрузкой
-wails build    # готовая сборка: build/bin/Aria-AudioPlayer.exe
+wails build    # готовая сборка: build/bin/Aria-Player.exe
 ```
 
 Проверьте установку командой `wails doctor`.
@@ -206,7 +206,7 @@ Go · [Wails v2](https://wails.io) · Svelte 4 · Vite 5 · [dhowden/tag](https:
 ## Installation
 
 ### Prebuilt binary
-Download `Aria-AudioPlayer.exe` from [Releases](../../releases) and run it. No installation is needed. Microsoft WebView2 is required (included with Windows 10/11 or installed together with Edge).
+Download `Aria-Player.exe` from [Releases](../../releases) and run it. No installation is needed. Microsoft WebView2 is required (included with Windows 10/11 or installed together with Edge).
 
 ### Build from source
 Requirements:
@@ -220,7 +220,7 @@ cd Aria-AudioPlayer
 cd frontend && npm install && cd ..
 
 wails dev      # development mode with hot reload
-wails build    # production build: build/bin/Aria-AudioPlayer.exe
+wails build    # production build: build/bin/Aria-Player.exe
 ```
 
 Check your setup with `wails doctor`.

@@ -13,6 +13,9 @@ body[data-theme='light'] {
 }
 body { background: var(--bg); color: var(--text); }
 
+/* Выпадающие меню — всегда сплошные, без стекла (даже в Glass-дизайне) */
+body { --menu-bg: var(--surface); }
+
 body[data-design='normal'] {
   --panel-bg: var(--surface); --panel-border: var(--border); --blur: 0px; --shadow: none;
 }

@@ -4,6 +4,7 @@ import { tracks as tracksStore, currentIndex as currentIdxStore, isPlaying as pl
 import { getSourceProvider } from './sources/index.js';
 import { updateSettings, settings as settingsStore } from '../stores/settings.js';
 import { queue as queueStore, setQueue, ALL_ID } from '../stores/playlists.js';
+import { recordListen, resetListen } from '../stores/stats.js';
 import { ReadFileAsDataURL } from '../../wailsjs/go/main/App'; // <-- Импорт Go функции
 
 // Сдвиг тона без изменения скорости: две линии задержки с плавным перекрытием (простой «granular» pitch shifter).
@@ -63,6 +64,21 @@ const XFADE_CURVE_POINTS = 65;
 // Запас по времени таймера завершения фейда поверх автоматизации на аудио-часах
 const XFADE_TIMER_MARGIN_MS = 150;
 
+// Эквалайзер: 10 peaking-бэндов + набор пресетов (гейны в дБ)
+export const EQ_FREQS = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
+export const EQ_PRESETS = {
+  off:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  rock: [5, 4, 3, 1, -1, -1, 0, 2, 3, 4],
+  pop:  [-1, 0, 1, 3, 4, 4, 2, 0, 0, -1],
+  bass: [6, 5, 4, 2, 1, 0, 0, 0, 0, 0],
+  jazz: [3, 2, 1, 2, -1, -1, 0, 1, 2, 3],
+};
+export const EQ_PRESET_LIST = [
+  { id: 'off', ru: 'Выкл' }, { id: 'flat', ru: 'Плоский' }, { id: 'rock', ru: 'Рок' },
+  { id: 'pop', ru: 'Поп' }, { id: 'bass', ru: 'Бас' }, { id: 'jazz', ru: 'Джazz' },
+];
+
 class PlayerController {
   constructor() {
     // --- Аудио-элементы -------------------------------------------------
@@ -90,7 +106,7 @@ class PlayerController {
     this.priority = []; // id треков из «играть следом»: берутся первыми, даже при shuffle
     this.speed = writable(1); // скорость воспроизведения (на время сеанса)
     this.pitch = writable(1); // тон (множитель частоты), на время сеанса
-    this.tempoLinked = writable(false); // скорость и тон связаны: меняются вместе, как у пластинки
+    this.tempoLinked = writable(true); // скорость и тон связаны: меняются вместе, как у пластинки (по умолчанию включено)
 
     // --- Web Audio граф -------------------------------------------------
     // elA → gainA ┐
@@ -109,6 +125,17 @@ class PlayerController {
     this._resumeHooked = false;
 
     this.volume = writable(0.5); // единственный источник громкости: все ползунки читают и пишут его
+
+    // Медиа-кнопки ОС (панель/блокировка/гарнитура): пуск, пауза, переключение треков
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      const ms = navigator.mediaSession;
+      const anyPlaying = () => this._liveEls().some((e) => !!e.src && !e.paused);
+      const safe = (name, fn) => { try { ms.setActionHandler(name, fn); } catch (e) {} };
+      safe('play', () => { if (!anyPlaying()) this.togglePlay(); });
+      safe('pause', () => { if (anyPlaying()) this.togglePlay(); });
+      safe('previoustrack', () => this.prev());
+      safe('nexttrack', () => this.next());
+    }
 
     // --- Состояние кроссфейда -------------------------------------------
     this._fading = false;        // идёт переход fade-out → fade-in
@@ -224,6 +251,14 @@ class PlayerController {
       const gainA = ctx.createGain();
       const gainB = ctx.createGain();
       const mixer = ctx.createGain();
+      const eqFilters = EQ_FREQS.map((f) => {
+        const b = ctx.createBiquadFilter();
+        b.type = 'peaking';
+        b.frequency.value = f;
+        b.Q.value = 1.1;
+        b.gain.value = 0;
+        return b;
+      });
       gainA.gain.value = 1;          // активный элемент звучит в полную
       gainB.gain.value = 0;          // неактивный — молчит, пока не начинает входить в фейд
       srcA.connect(gainA);
@@ -234,7 +269,6 @@ class PlayerController {
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 512;
       analyser.smoothingTimeConstant = 0.8;
-      mixer.connect(analyser);
       analyser.connect(ctx.destination);
 
       // присваиваем поля только после полной сборки
@@ -245,16 +279,19 @@ class PlayerController {
       this.gainA = gainA;
       this.gainB = gainB;
       this.mixer = mixer;
+      this.eqFilters = eqFilters;
       this.analyser = analyser;
       this._graphBuilding = false;
 
       this._resumeCtx();
       this._hookResumeOnGesture();
-      // если шифтер тона уже был включён до перестроения — вернуть его в цепочку
+      // маршрут mixer → EQ → (шифтер тона | анализатор) + применить пресет эквалайзера
       const pitch = get(this.pitch), speed = get(this.speed);
       const linked = get(this.tempoLinked) && Math.abs(speed - pitch) < 1e-6;
       const ratio = linked ? 1 : pitch;
       if (Math.abs(ratio - 1) > 1e-6) this.ensureShifter().then(() => this.rewire(ratio));
+      else this.rewire(1);
+      this.applyEq(get(settingsStore).eqPreset);
       return true;
     } catch (e) {
       console.warn(tr('Web Audio недоступен:'), e);
@@ -296,13 +333,32 @@ class PlayerController {
     try {
       this.mixer.disconnect();
     } catch (e) {}
+    // mixer → EQ-цепочка → (шифтер | анализатор)
+    let head = this.mixer;
+    if (this.eqFilters && this.eqFilters.length) {
+      for (const f of this.eqFilters) {
+        try { f.disconnect(); } catch (e) {}
+      }
+      for (let i = 0; i < this.eqFilters.length; i++) {
+        if (i === 0) this.mixer.connect(this.eqFilters[0]);
+        else this.eqFilters[i - 1].connect(this.eqFilters[i]);
+      }
+      head = this.eqFilters[this.eqFilters.length - 1];
+    }
     if (this.shifter && Math.abs(ratio - 1) > 1e-6) {
       this.shifter.parameters.get('ratio').value = ratio;
-      this.mixer.connect(this.shifter);
+      head.connect(this.shifter);
       this.shifter.connect(this.analyser);
     } else {
-      this.mixer.connect(this.analyser);
+      head.connect(this.analyser);
     }
+  }
+
+  /** Применяет пресет эквалайзера (каждый бэнд — peaking-фильтр, gain в дБ). */
+  applyEq(preset) {
+    const gains = EQ_PRESETS[preset] || EQ_PRESETS.off;
+    if (!this.eqFilters) return; // граф ещё не собран — применится при сборке
+    this.eqFilters.forEach((b, i) => { b.gain.value = gains[i] || 0; });
   }
 
   async ensureShifter() {
@@ -562,8 +618,21 @@ class PlayerController {
   // Загрузка трека
   // ==========================================================================
 
+  // Метаданные для медиа-кнопок ОС: что играет — на панели управления и в гарнитуре
+  _setMediaMeta(track) {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title || '',
+        artist: track.artist || '',
+        album: track.album || '',
+      });
+    } catch (e) {}
+  }
+
   async playTrack(track) {
     if (!this.audioElement || !track) return;
+    this._setMediaMeta(track);
     const seq = ++this._playSeq; // если появится более новый вызов — этот уступает
 
     const provider = getSourceProvider(track);
@@ -676,6 +745,18 @@ class PlayerController {
     playingStore.set(playing);
   }
 
+  /** Накопление секунд для статистики (вызывается по timeupdate видимого элемента). */
+  _tickStats(el) {
+    const t = el.currentTime;
+    if (this._statsPrev == null) { this._statsPrev = t; return; }
+    const dt = t - this._statsPrev;
+    this._statsPrev = t;
+    if (!(dt > 0) || dt > 2) return; // перемотка/скачок — не считаем
+    const track = get(tracksStore)[get(currentIdxStore)];
+    if (!track) return;
+    recordListen(track, get(queueStore).sourceId, dt);
+  }
+
   onTimeUpdate(el) {
     // время/прогресс показываем только от ui-элемента (во время фейда — от входящего)
     if (el === this.uiEl) {
@@ -684,6 +765,8 @@ class PlayerController {
       if (Date.now() % 5000 < 100) {
         this.scheduleSaveState();
       }
+      // Статистика прослушивания: накапливаем секунды текущего трека
+      this._tickStats(el);
     }
 
     // --- триггер окна кроссфейда: подходим к концу текущего трека ---
@@ -752,6 +835,7 @@ class PlayerController {
       return;
     }
     if (el !== this.audioElement) return;   // чужой/неактивный элемент
+    resetListen();                          // трек доиграл — новый проход того же трека снова засчитается
     if (this._fadeOutOnly) return;          // уход в тишину завершит сам себя
 
     if (get(repeatMode) === 'one') {

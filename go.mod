@@ -9,7 +9,14 @@ require (
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
+	github.com/abema/go-mp4 v1.3.0 // indirect
+	github.com/aler9/writerseeker v1.1.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
+	github.com/bogem/id3v2/v2 v2.1.4 // indirect
+	github.com/fsnotify/fsnotify v1.10.1 // indirect
+	github.com/gcottom/flacmeta v0.0.6 // indirect
+	github.com/gcottom/mp4meta v0.0.5 // indirect
+	github.com/gcottom/oggmeta v0.0.8 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -27,6 +34,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.49.1 // indirect
+	github.com/sunfish-shogi/bufseekio v0.1.0 // indirect
 	github.com/tkrajina/go-reflector v0.5.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
